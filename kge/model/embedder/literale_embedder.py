@@ -70,7 +70,17 @@ class LiteralEEmbedder(KgeEmbedder):
             self.dim = self.base_embedder.dim
 
         # load numeric literals
-        self.num_lit = np.load('/home/nluedema/kge/LiteralE_additional_files/fb15k-237/numerical_literals.npy')
+        import os.path
+        local_path = "/home/niklas/Desktop/kge/LiteralE_additional_files/fb15k-237/numerical_literals.npy"
+        gpu_path = "/home/nluedema/kge/LiteralE_additional_files/fb15k-237/numerical_literals.npy"
+        
+        if os.path.isfile(gpu_path):
+            self.num_lit = np.load(gpu_path)
+        elif os.path.isfile(local_path):
+            self.num_lit = np.load(local_path)
+        else:
+            raise FileNotFoundError("numeric literal file cannot be found")
+
         self.dim_lit = self.num_lit.shape[1]
         
         # normalize numeric literals
