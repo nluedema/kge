@@ -70,7 +70,7 @@ class LiteralEEmbedder(KgeEmbedder):
             self.dim = self.base_embedder.dim
 
         # load numeric literals
-        self.num_lit = np.load('/home/niklas/Desktop/kge/LiteralE_additional_files/fb15k-237/numerical_literals.npy')
+        self.num_lit = np.load('/home/nluedema/kge/LiteralE_additional_files/fb15k-237/numerical_literals.npy')
         self.dim_lit = self.num_lit.shape[1]
         
         # normalize numeric literals
@@ -79,7 +79,7 @@ class LiteralEEmbedder(KgeEmbedder):
         self.num_lit = (self.num_lit - min_lit) / (max_lit - min_lit + 1e-8)
 
         # transform to tensor
-        self.num_lit = torch.from_numpy(self.num_lit)
+        self.num_lit = torch.nn.Parameter(torch.from_numpy(self.num_lit))
 
         # initialize gate
         self.gate = LiteralEGate(self.base_embedder.dim + self.dim_lit, self.dim)

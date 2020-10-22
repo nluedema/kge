@@ -1,0 +1,34 @@
+job.type: train
+dataset.name: fb15k-237
+model: distmult
+
+distmult:
+  entity_embedder:
+    dim: 200
+    dropout: 0.2
+  relation_embedder:
+    dim: 200
+    dropout: 0.2
+
+train:
+  optimizer: Adam
+  optimizer_args:
+    lr: 0.001
+    weight_decay: 0.0
+  #lr_scheduler: ReduceLROnPlateau
+  #lr_scheduler_args:
+  #  mode: max
+  #  patience: 4
+  type: KvsAll
+  loss: bce
+  max_epochs: 100
+  batch_size: 128
+
+KvsAll:
+  label_smoothing: 0.1
+
+valid:
+  early_stopping:
+    patience: 3
+  every: 3
+  metric: mean_reciprocal_rank_filtered_with_test
