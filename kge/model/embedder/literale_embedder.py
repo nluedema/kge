@@ -154,9 +154,12 @@ class LiteralEEmbedder(KgeEmbedder):
             )
             regularize_weight = self._get_regularize_weight()
             # unweighted Lp regularization
-            parameters = torch.cat(
-                [torch.flatten(p) for p in self.gate.parameters()]
-            )
+            parameter_list = []
+            for name, parameter in self.gate.named_parameters():
+                if "weight" in name:
+                    parameter_list.append(torch.flatten(parameter))
+            parameters = torch.cat(parameter_list)
+
             result += [
                 (
                     f"{self.configuration_key}.L{p}_penalty",
