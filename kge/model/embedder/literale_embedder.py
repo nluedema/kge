@@ -96,8 +96,13 @@ class LiteralEEmbedder(KgeEmbedder):
 
         if not init_for_load_only:
             # initialize weights
-            for weights in self.gate.parameters():
-                self.initialize(weights)
+            for name, weights in self.gate.named_parameters():
+                # set bias to zero
+                # https://cs231n.github.io/neural-networks-2/#init 
+                if "bias" in name:
+                    torch.nn.init.zeros_(weights)
+                else:
+                    self.initialize(weights)
 
         # TODO handling negative dropout because using it with ax searches for now
         dropout = self.get_option("dropout")
