@@ -68,6 +68,19 @@ class LiteralEEmbedder(KgeEmbedder):
         if self.dim < 0:
             # set dim to base_embedder dim
             self.dim = self.base_embedder.dim
+        
+        # HACK
+        # kwargs["indexes"] is set to None, if the literale_embedder has
+        # regularize_args.weighted set to False.
+        # If the base_embedder has regularize_args.weighted set to True,
+        # it tries to access kwargs["indexes"], which leads to an error
+        
+        # Set regularize_args.weighted to True, if it is set for the base_embedder
+        if self.base_embedder.get_option("regularize_args.weighted"):
+            config.set(
+                self.configuration_key + ".regularize_args.weighted",
+                True
+            )
 
         # load numeric literals
         import os.path
@@ -89,7 +102,7 @@ class LiteralEEmbedder(KgeEmbedder):
         self.num_lit = (self.num_lit - min_lit) / (max_lit - min_lit + 1e-8)
 
         # transform to tensor
-        self.num_lit = torch.nn.Parameter(torch.from_numpy(self.num_lit))
+        self.num_lit = torch.from_numpy(self.num_lit).to(config.get("job.device"))
 
         # initialize gate
         self.gate = LiteralEGate(self.base_embedder.dim + self.dim_lit, self.dim)
