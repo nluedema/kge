@@ -1,16 +1,16 @@
 job.type: train
 dataset.name: fb15k-237
-model: literale
+model: distmult
 
-literale:
+distmult:
   entity_embedder:
-    dropout: 0.
-    base_embedder:
-      dim: 200
-      dropout: 0.2
+    dim: 200
+    dropout: 0.2
+    initialize: xavier_normal_
   relation_embedder:
     dim: 200
     dropout: 0.2
+    initialize: xavier_normal_
 
 train:
   optimizer: Adam

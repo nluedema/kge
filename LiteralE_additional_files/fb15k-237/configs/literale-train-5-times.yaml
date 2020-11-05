@@ -1,0 +1,54 @@
+job.type: search
+dataset.name: fb15k-237
+model: literale
+
+literale:
+  entity_embedder:
+    dim: -1
+    dropout: 0.2
+    initialize: kaiming_uniform_
+    initialize_args:
+      +++: +++
+      kaiming_uniform_:
+        a: 2.23606797749979
+    base_embedder:
+      dim: 200
+      dropout: 0.
+      initialize: xavier_normal_
+
+  relation_embedder:
+    dim: 200
+    dropout: 0.2
+    initialize: xavier_normal_
+
+train:
+  optimizer: Adam
+  optimizer_args:
+    lr: 0.001
+    weight_decay: 0.0
+  #lr_scheduler: ReduceLROnPlateau
+  #lr_scheduler_args:
+  #  mode: max
+  #  patience: 4
+  type: KvsAll
+  loss: bce
+  max_epochs: 100
+  #batch_size: 128
+
+KvsAll:
+  label_smoothing: 0.1
+
+valid:
+  early_stopping:
+    patience: 3
+  every: 3
+  metric: mean_reciprocal_rank_filtered_with_test
+
+ax_search:
+  num_trials: 5
+  num_sobol_trials: 5
+  parameters:
+    - name: train.batch_size
+      type: fixed
+      value: 128
+      is_ordered: True
