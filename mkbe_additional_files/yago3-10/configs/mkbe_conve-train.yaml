@@ -1,0 +1,34 @@
+job.type: train
+dataset.name: yago3-10-mkbe
+
+import: [mkbe_conve]
+model: reciprocal_relations_model
+reciprocal_relations_model.base_model.type: mkbe_conve
+
+train:
+  optimizer: Adam
+  optimizer_args:
+    lr: 0.2
+    weight_decay: 0.4e-7
+  type: 1vsAll
+  batch_size: 256
+  max_epochs: 200
+
+valid:
+  early_stopping:
+    patience: 5
+  every: 5
+  metric: mean_reciprocal_rank_filtered_with_test
+
+mkbe_conve.entity_embedder:
+  dim: 90
+
+lookup_embedder:
+  dim: 90
+  initialize: xavier_normal_
+
+reciprocal_relations_model.base_model:
+  round_dim: True
+  entity_embedder.dropout: 0.2
+  relation_embedder.dropout: 0.2
+

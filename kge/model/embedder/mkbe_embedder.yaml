@@ -1,0 +1,17 @@
+import: [lookup_embedder]
+
+mkbe_embedder:
+  class_name: MKBEEmbedder
+  base_embedder:
+    type: lookup_embedder
+    +++: +++
+  dim: 90                     # base_embedder dim will be set to this one
+  initialize: normal_          # xavier, uniform, normal
+  initialize_args:
+    +++: +++
+  dropout: 0.                 # dropout used for embeddings
+  regularize: 'lp'              # '', 'lp'
+  regularize_weight: 0.0
+  regularize_args:
+    p: 2
+    weighted: False
