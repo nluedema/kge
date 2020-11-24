@@ -121,36 +121,51 @@ class MKBEEmbedder(KgeEmbedder):
         self.base_embedder.prepare_job(job, **kwargs)
 
     def _embed(self, indexes: Tensor) -> Tensor:
-        embeddings = torch.empty(
-            (len(indexes), self.dim), 
-            device=self.base_embedder._embeddings.weight.device#,
-            #requires_grad = True
-            # I think requires_grad should not be set
-        )
+        #embeddings = torch.empty(
+        #    (len(indexes), self.dim), 
+        #    device=self.base_embedder._embeddings.weight.device,
+        #    requires_grad = True
+        #)
 
-        indexes_structural_idx = indexes < 123182
-        indexes_numerical_idx = indexes >= 123182
+        #indexes_structural_idx = indexes < 123182
+        #indexes_numerical_idx = indexes >= 123182
 
-        indexes_structural = indexes[indexes_structural_idx]
-        indexes_numerical = indexes[indexes_numerical_idx] - 123182
+        #indexes_structural = indexes[indexes_structural_idx]
+        #indexes_numerical = indexes[indexes_numerical_idx] - 123182
 
-        embeddings_structural = self.base_embedder.embed(indexes_structural)
-        embeddings[indexes_structural_idx,:] = embeddings_structural
+        #embeddings_structural = self.base_embedder.embed(indexes_structural)
+        #embeddings[indexes_structural_idx,:] = embeddings_structural
 
-        if len(indexes_numerical) > 0:
+        #if len(indexes_numerical) > 0:
+        #    numerical_data = self.numerical_data[indexes_numerical]
+
+        #    # transform row into column vector
+        #    numerical_data = numerical_data.reshape(-1,1)
+        #    embeddings_numerical = self.numerical_mlp(numerical_data)
+        #    embeddings[indexes_numerical_idx,:] = embeddings_numerical
+
+        #return embeddings
+
+        if torch.any(indexes < 123182).item():
+            #if len(indexes) != sum(indexes < 123182).item():
+            #    raise ValueError("all indices are expected to have the same modality")
+            
+            return self.base_embedder.embed(indexes)
+        else:
+            #if len(indexes) != sum(indexes >= 123182).item():
+            #    raise ValueError("all indices are expected to have the same modality")
+                    
+            indexes_numerical = indexes - 123182
+            
             numerical_data = self.numerical_data[indexes_numerical]
-
-            # transform row into column vector
             numerical_data = numerical_data.reshape(-1,1)
-            embeddings_numerical = self.numerical_mlp(numerical_data)
-            embeddings[indexes_numerical_idx,:] = embeddings_numerical
-
-        return embeddings
+            return self.numerical_mlp(numerical_data)
     
     def embed(self, indexes: Tensor) -> Tensor:
         return self._postprocess(self._embed(indexes.long()))
 
     def embed_all(self) -> Tensor:
+        raise ValueError("Should never be called, because we distinguish between structural and numerical objects")
         return self._postprocess(self._embeddings_all())
 
     def _postprocess(self, embeddings: Tensor) -> Tensor:

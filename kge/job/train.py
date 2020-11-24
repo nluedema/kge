@@ -1110,34 +1110,38 @@ class TrainingJob1vsAll(TrainingJob):
         #loss_value_sp = self.loss(scores_sp, triples[:, 2]) / batch_size
         #result.avg_loss += loss_value_sp.item()
 
-        scores_sp_structural = self.model.score_sp(
-            triples_structural[:, 0],
-            triples_structural[:, 1],
-            all_structural
-        )
-        loss_value_sp_structural = self.loss(
-            scores_sp_structural, triples_structural[:,2]
-        ) / batch_size_structural
-        result.avg_loss += loss_value_sp_structural.item()
+        if batch_size_structural > 1:
+            scores_sp_structural = self.model.score_sp(
+                triples_structural[:, 0],
+                triples_structural[:, 1],
+                all_structural
+            )
+            loss_value_sp_structural = self.loss(
+                scores_sp_structural, triples_structural[:,2]
+            ) / batch_size_structural
+            result.avg_loss += loss_value_sp_structural.item()
 
-        scores_sp_numerical = self.model.score_sp(
-            triples_numerical[:, 0],
-            triples_numerical[:, 1],
-            all_numerical
-        )
-        loss_value_sp_numerical = self.loss(
-            # I have 0 to 111389 numerical classes
-            # => the labels also have to be between 0 and 111389
-            scores_sp_numerical, triples_numerical[:,2]- 123182
-        ) / batch_size_numerical
-        result.avg_loss += loss_value_sp_numerical.item()
+        #if batch_size_numerical > 1:
+        #    scores_sp_numerical = self.model.score_sp(
+        #        triples_numerical[:, 0],
+        #        triples_numerical[:, 1],
+        #        all_numerical
+        #    )
+        #    loss_value_sp_numerical = self.loss(
+        #        # I have 0 to 111389 numerical classes
+        #        # => the labels also have to be between 0 and 111389
+        #        scores_sp_numerical, triples_numerical[:,2]- 123182
+        #    ) / batch_size_numerical
+        #    result.avg_loss += loss_value_sp_numerical.item()
 
         result.forward_time += time.time()
         result.backward_time = -time.time()
         if not self.is_forward_only:
             #loss_value_sp.backward()
-            loss_value_sp_structural.backward()
-            loss_value_sp_numerical.backward()
+            if batch_size_structural > 1:
+                loss_value_sp_structural.backward()
+            #if batch_size_numerical > 1:
+            #    loss_value_sp_numerical.backward()
         result.backward_time += time.time()
 
         # forward/backward pass (po)
@@ -1146,15 +1150,16 @@ class TrainingJob1vsAll(TrainingJob):
         #loss_value_po = self.loss(scores_po, triples[:, 0]) / batch_size
         #result.avg_loss += loss_value_po.item()
 
-        scores_po_structural = self.model.score_po(
-            triples_structural[:, 1],
-            triples_structural[:, 2],
-            all_structural
-        )
-        loss_value_po_structural = self.loss(
-            scores_po_structural, triples_structural[:,0]
-        ) / batch_size_structural
-        result.avg_loss += loss_value_po_structural.item()
+        if batch_size_structural > 1:
+            scores_po_structural = self.model.score_po(
+                triples_structural[:, 1],
+                triples_structural[:, 2],
+                all_structural
+            )
+            loss_value_po_structural = self.loss(
+                scores_po_structural, triples_structural[:,0]
+            ) / batch_size_structural
+            result.avg_loss += loss_value_po_structural.item()
 
         # do nothing for the numerical triples
         # in MKBE there are only reciprocal relations for structural triples
@@ -1163,5 +1168,6 @@ class TrainingJob1vsAll(TrainingJob):
         result.backward_time -= time.time()
         if not self.is_forward_only:
             #loss_value_po.backward()
-            loss_value_po_structural.backward()
+            if batch_size_structural > 1:
+                loss_value_po_structural.backward()
         result.backward_time += time.time()

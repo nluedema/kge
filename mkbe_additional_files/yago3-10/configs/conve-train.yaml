@@ -1,9 +1,10 @@
 job.type: train
 dataset.name: yago3-10-mkbe
 
-import: [mkbe_conve]
+#import: [mkbe_conve]
 model: reciprocal_relations_model
-reciprocal_relations_model.base_model.type: mkbe_conve
+#reciprocal_relations_model.base_model.type: mkbe_conve
+reciprocal_relations_model.base_model.type: conve
 
 train:
   optimizer: Adam
@@ -20,7 +21,8 @@ valid:
   every: 5
   metric: mean_reciprocal_rank_filtered_with_test
 
-mkbe_conve.entity_embedder:
+#mkbe_conve.entity_embedder:
+conve.entity_embedder:
   dim: 200
 
 lookup_embedder:
