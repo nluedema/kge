@@ -84,8 +84,10 @@ class LiteralEEmbedder(KgeEmbedder):
 
         # load numeric literals
         import os.path
-        local_path = "/home/niklas/Desktop/kge/LiteralE_additional_files/fb15k-237/numerical_literals.npy"
-        gpu_path = "/home/nluedema/kge/LiteralE_additional_files/fb15k-237/numerical_literals.npy"
+        #local_path = "/home/niklas/Desktop/kge/LiteralE_additional_files/fb15k-237/numerical_literals.npy"
+        #gpu_path = "/home/nluedema/kge/LiteralE_additional_files/fb15k-237/numerical_literals.npy"
+        local_path = "/home/niklas/Desktop/kge/LiteralE_additional_files/fb15k-237/text_literals.npy"
+        gpu_path = "/home/nluedema/kge/LiteralE_additional_files/fb15k-237/text_literals.npy"
         
         if os.path.isfile(gpu_path):
             self.num_lit = np.load(gpu_path)
@@ -97,9 +99,9 @@ class LiteralEEmbedder(KgeEmbedder):
         self.dim_lit = self.num_lit.shape[1]
         
         # normalize numeric literals
-        max_lit = np.max(self.num_lit, axis=0)
-        min_lit = np.min(self.num_lit, axis=0)
-        self.num_lit = (self.num_lit - min_lit) / (max_lit - min_lit + 1e-8)
+        #max_lit = np.max(self.num_lit, axis=0)
+        #min_lit = np.min(self.num_lit, axis=0)
+        #self.num_lit = (self.num_lit - min_lit) / (max_lit - min_lit + 1e-8)
 
         # transform to tensor
         self.num_lit = torch.from_numpy(self.num_lit).to(config.get("job.device"))
