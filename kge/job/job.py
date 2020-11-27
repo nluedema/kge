@@ -85,9 +85,17 @@ class Job:
         elif job_type == "search":
             return SearchJob.create(config, dataset, parent_job=parent_job)
         elif job_type == "eval":
+            # MKBE HACK
+            import copy
+            config_eval = copy.deepcopy(config)
+            config_eval.set("dataset.name","yago3-10")
+            dataset_eval = Dataset.create(config_eval)
             return EvaluationJob.create(
-                config, dataset, parent_job=parent_job, model=model
+                config_eval, dataset_eval, parent_job=parent_job, model=model
             )
+            #return EvaluationJob.create(
+            #    config, dataset, parent_job=parent_job, model=model
+            #)
         else:
             raise ValueError("unknown job type")
 
