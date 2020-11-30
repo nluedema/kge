@@ -1,0 +1,33 @@
+job.type: train
+dataset.name: fb15k-237
+
+import: [transformer]
+model: reciprocal_relations_model
+reciprocal_relations_model.base_model.type: transformer
+
+train:
+  optimizer: Adam
+  optimizer_args:
+    lr: 0.01
+    weight_decay: 0.1
+  batch_size: 512
+  max_epochs: 200
+  loss: kl
+  type: KvsAll
+  lr_scheduler: ReduceLROnPlateau
+  lr_scheduler_args:
+    mode: max
+    patience: 2
+
+KvsAll:
+  label_smoothing: 0.1
+  query_types:
+    sp_: True
+    s_o: False
+    _po: True
+
+valid:
+  early_stopping:
+    patience: 5
+  every: 5
+  metric: mean_reciprocal_rank_filtered_with_test
