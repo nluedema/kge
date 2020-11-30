@@ -1,9 +1,9 @@
 job.type: train
 dataset.name: fb15k-237
 
-import: [transformer]
+import: [transformer_david]
 model: reciprocal_relations_model
-reciprocal_relations_model.base_model.type: transformer
+reciprocal_relations_model.base_model.type: transformer_david
 
 train:
   optimizer: Adam
