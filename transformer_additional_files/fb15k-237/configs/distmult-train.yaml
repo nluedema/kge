@@ -1,0 +1,79 @@
+job.type: train
+dataset.name: fb15k-237
+
+import: [distmult]
+model: reciprocal_relations_model
+reciprocal_relations_model.base_model.type: distmult
+
+distmult:
+  entity_embedder:
+    dim: 200
+    dropout: 0.2
+    initialize: xavier_normal_
+  relation_embedder:
+    dim: 200
+    dropout: 0.2
+    initialize: xavier_normal_
+
+train:
+  optimizer: Adam
+  optimizer_args:
+    lr: 0.001
+    weight_decay: 0.0
+  batch_size: 512
+  max_epochs: 200
+  loss: kl
+  type: KvsAll
+  lr_scheduler: ReduceLROnPlateau
+  lr_scheduler_args:
+    mode: max
+    patience: 2
+
+KvsAll:
+  label_smoothing: 0.1
+  query_types:
+    sp_: True
+    s_o: False
+    _po: True
+
+valid:
+  early_stopping:
+    patience: 5
+  every: 5
+  metric: mean_reciprocal_rank_filtered_with_test
+#job.type: train
+#dataset.name: fb15k-237
+#model: distmult
+#
+#distmult:
+#  entity_embedder:
+#    dim: 200
+#    dropout: 0.2
+#    initialize: xavier_normal_
+#  relation_embedder:
+#    dim: 200
+#    dropout: 0.2
+#    initialize: xavier_normal_
+#
+#train:
+#  optimizer: Adam
+#  optimizer_args:
+#    lr: 0.001
+#    weight_decay: 0.1
+#  #lr_scheduler: ReduceLROnPlateau
+#  #lr_scheduler_args:
+#  #  mode: max
+#  #  patience: 4
+#  type: KvsAll
+#  loss: kl
+#  max_epochs: 100
+#  batch_size: 512
+#
+#KvsAll:
+#  label_smoothing: 0.1
+#
+#valid:
+#  early_stopping:
+#    patience: 3
+#  every: 3
+#  metric: mean_reciprocal_rank_filtered_with_test

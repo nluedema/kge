@@ -1,5 +1,5 @@
 import torch
-import torch.nn
+import torch.nn as nn
 from torch import Tensor
 
 from kge import Config, Dataset
@@ -14,20 +14,30 @@ class TransformerScorer(RelationalScorer):
         super().__init__(config, dataset, configuration_key)
 
         from transformers.models.bert.configuration_bert import BertConfig
-        bert_config = BertConfig()
+        self.bert_config = BertConfig()
 
-        bert_config.hidden_size = 320
-        bert_config.num_attention_heads = 8
-        bert_config.num_hidden_layers = 3
-        bert_config.intermediate_size = 1280
+        #self.bert_config.hidden_size = 320
+        self.bert_config.hidden_size = 256
+        #self.bert_config.hidden_size = 200
 
-        bert_config.attention_probs_dropout_prob = .1
-        bert_config.hidden_dropout_prob = .1
+        self.bert_config.num_attention_heads = 8
+        self.bert_config.num_hidden_layers = 3
+        self.bert_config.intermediate_size = 1280
 
-        del bert_config.max_position_embeddings
-        del bert_config.pad_token_id
-        del bert_config.type_vocab_size
-        del bert_config.vocab_size
+        self.bert_config.attention_probs_dropout_prob = .1
+        self.bert_config.hidden_dropout_prob = .1
+        self.bert_config.embedding_dropout_prob = .6
+        #self.bert_config.embedding_dropout_prob = .2
+
+        del self.bert_config.max_position_embeddings
+        del self.bert_config.pad_token_id
+        del self.bert_config.type_vocab_size
+        del self.bert_config.vocab_size
+
+        self.special_embeddings = nn.Embedding(2, self.bert_config.hidden_size) #CLS, MASK
+        self.token_type_embeddings = nn.Embedding(3, self.bert_config.hidden_size)
+        self.LayerNorm = nn.LayerNorm(self.bert_config.hidden_size, eps=self.bert_config.layer_norm_eps)
+        self.dropout = nn.Dropout(self.bert_config.embedding_dropout_prob) 
 
         self.emb_dim = self.get_option("entity_embedder.dim")
 
@@ -39,18 +49,18 @@ class TransformerScorer(RelationalScorer):
 
         # TODO make all parameters configurable
         from transformers.models.bert.modeling_bert import BertEncoder
-        self.encoder = BertEncoder(bert_config)
+        self.encoder = BertEncoder(self.bert_config)
 
         def _init_weights(module):
             if isinstance(module, (torch.nn.Linear, torch.nn.Embedding)):
-                module.weight.data.normal_(mean=0.0, std=bert_config.initializer_range)
+                module.weight.data.normal_(mean=0.0, std=self.bert_config.initializer_range)
             elif isinstance(module, torch.nn.LayerNorm):
                 module.bias.data.zero_()
                 module.weight.data.fill_(1.0)
             if isinstance(module, torch.nn.Linear) and module.bias is not None:
                 module.bias.data.zero_()
 
-        self.encoder.apply(_init_weights)
+        self.apply(_init_weights)
 
     def score_emb(self, s_emb, p_emb, o_emb, combine: str):
         if combine not in ["sp_", "spo"]:
@@ -62,26 +72,27 @@ class TransformerScorer(RelationalScorer):
 
         # transform the sp pairs
         batch_size = len(s_emb)
-        out = self.encoder(
-            torch.stack(
-                (
-                    self.cls_emb.repeat((batch_size, 1)),
-                    s_emb + self.sub_type_emb.unsqueeze(0),
-                    p_emb + self.rel_type_emb.unsqueeze(0),
-                ),
-                dim=1,
-            ),
-            head_mask=[None] * 3
-        )[0]  # NxSxE = batch_size x 3 x emb_size
+        device = self.special_embeddings.weight.device
 
-        # pick the transformed CLS embeddings
-        out = out[:, 0]
+        cls_embeds = self.special_embeddings(torch.tensor(0).to(device)).unsqueeze(0).expand(batch_size, -1)
+        input_embeds = torch.cat([cls_embeds.unsqueeze(1),
+                                  s_emb.unsqueeze(1),
+                                  p_emb.unsqueeze(1)], 1)
+        token_type_ids = torch.arange(3).unsqueeze(0).expand(batch_size, -1).to(device)
+        token_type_embeds = self.token_type_embeddings(token_type_ids)
+
+        embeds = input_embeds + token_type_embeds
+        embeds = self.LayerNorm(embeds)
+        embeds = self.dropout(embeds)
+
+        encoder_output = self.encoder(embeds, head_mask=[None]*self.bert_config.num_hidden_layers)[0]
+        cls_output = encoder_output[:, 0]
 
         # now take dot product
         if combine == "sp_":
-            out = torch.mm(out, o_emb.transpose(1, 0))
+            out = torch.mm(cls_output, o_emb.transpose(1, 0))
         elif combine == "spo":
-            out = (out * o_emb).sum(-1)
+            out = (cls_output * o_emb).sum(-1)
         else:
             raise Exception("can't happen")
 

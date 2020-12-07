@@ -5,12 +5,12 @@ transformer_david:
   round_dim: False
   entity_embedder:
     type: lookup_embedder
-    dropout: 0.6
+    dropout: 0.0
     dim: 320
     +++: +++
   relation_embedder:
     type: lookup_embedder
-    dropout: 0.6
+    dropout: 0.0
     dim: 320
     +++: +++
 

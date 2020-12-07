@@ -1,15 +1,25 @@
 job.type: train
 dataset.name: fb15k-237
 
-import: [transformer_david]
+import: [transformer]
 model: reciprocal_relations_model
-reciprocal_relations_model.base_model.type: transformer_david
+reciprocal_relations_model.base_model.type: transformer
+
+transformer:
+  entity_embedder:
+    dim: 200
+    dropout: 0.2
+    initialize: xavier_normal_
+  relation_embedder:
+    dim: 200
+    dropout: 0.2
+    initialize: xavier_normal_
 
 train:
   optimizer: Adam
   optimizer_args:
-    lr: 0.01
-    weight_decay: 0.1
+    lr: 0.001
+    weight_decay: 0.0
   batch_size: 512
   max_epochs: 200
   loss: kl
