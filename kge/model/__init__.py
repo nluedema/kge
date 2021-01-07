@@ -5,6 +5,9 @@ from kge.model.embedder.lookup_embedder import LookupEmbedder
 from kge.model.embedder.projection_embedder import ProjectionEmbedder
 from kge.model.embedder.tucker3_relation_embedder import Tucker3RelationEmbedder
 
+from kge.model.embedder.multimodal_embedder import MultimodalEmbedder
+from kge.model.embedder.numeric_embedder import NumericEmbedder
+
 # models
 from kge.model.complex import ComplEx
 from kge.model.conve import ConvE
