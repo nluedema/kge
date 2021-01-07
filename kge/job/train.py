@@ -1051,6 +1051,43 @@ class TrainingJob1vsAll(TrainingJob):
         if self.__class__ == TrainingJob1vsAll:
             for f in Job.job_created_hooks:
                 f(self)
+        
+        if self.config.get("train.multimodal"):
+            # load dataset yaml
+            import yaml
+            with open(f"{self.dataset.folder}/dataset.yaml", "r") as f:
+                self.dataset_yaml = yaml.load(f, Loader=yaml.SafeLoader)["dataset"]
+
+            self.modalities = {}
+            prefix = "files.train.modality"
+            for modality in self.config.get("train.multimodal_args.modalities"):
+                weight = self.config.get(
+                    f"train.multimodal_args.{modality}.weight"
+                )
+                entity_start_idx = self.dataset_yaml[
+                    f"{prefix}.{modality}.entity.start_idx"
+                ]
+                entity_end_idx = self.dataset_yaml[
+                    f"{prefix}.{modality}.entity.end_idx"
+                ]
+                relation_start_idx = self.dataset_yaml[
+                    f"{prefix}.{modality}.relation.start_idx"
+                ]
+                relation_end_idx = self.dataset_yaml[
+                    f"{prefix}.{modality}.relation.end_idx"
+                ]
+                all_idx = torch.arange(
+                    start=entity_start_idx, end=entity_end_idx,
+                    dtype=torch.long, device=self.device
+                )
+                self.modalities[modality] = {
+                    "weight":weight,
+                    "entity_start_idx":entity_start_idx,
+                    "entity_end_idx":entity_end_idx,
+                    "relation_start_idx":relation_start_idx,
+                    "relation_end_idx":relation_end_idx,
+                    "all_idx":all_idx
+                }
 
     def _prepare(self):
         """Construct dataloader"""
@@ -1081,30 +1118,89 @@ class TrainingJob1vsAll(TrainingJob):
         subbatch_slice,
         result: TrainingJob._ProcessBatchResult,
     ):
-        # prepare
-        result.prepare_time -= time.time()
-        triples = batch["triples"][subbatch_slice].to(self.device)
-        batch_size = len(triples)
-        result.prepare_time += time.time()
+        if self.config.get("train.multimodal"):
+            # prepare
+            result.prepare_time -= time.time()
+            triples = batch["triples"][subbatch_slice]
 
-        # forward/backward pass (sp)
-        result.forward_time -= time.time()
-        scores_sp = self.model.score_sp(triples[:, 0], triples[:, 1])
-        loss_value_sp = self.loss(scores_sp, triples[:, 2]) / batch_size
-        result.avg_loss += loss_value_sp.item()
-        result.forward_time += time.time()
-        result.backward_time = -time.time()
-        if not self.is_forward_only:
-            loss_value_sp.backward()
-        result.backward_time += time.time()
+            triples_per_modality = {}
+            batch_size_per_modality = {}
 
-        # forward/backward pass (po)
-        result.forward_time -= time.time()
-        scores_po = self.model.score_po(triples[:, 1], triples[:, 2])
-        loss_value_po = self.loss(scores_po, triples[:, 0]) / batch_size
-        result.avg_loss += loss_value_po.item()
-        result.forward_time += time.time()
-        result.backward_time -= time.time()
-        if not self.is_forward_only:
-            loss_value_po.backward()
-        result.backward_time += time.time()
+            for modality, modality_dict in self.modalities.items():
+                triples_per_modality[modality] = triples[
+                    (modality_dict["relation_start_idx"] <= triples[:,1])
+                    & (triples[:,1] < modality_dict["relation_end_idx"])
+                    ,:
+                ].to(self.device)
+                batch_size_per_modality[modality] = len(
+                    triples_per_modality[modality]
+                )
+            result.prepare_time += time.time()
+
+            # forward/backward pass (sp)
+            for modality, modality_dict in self.modalities.items():
+                result.forward_time -= time.time()
+                triples = triples_per_modality[modality]
+                batch_size = batch_size_per_modality[modality]
+                weight = modality_dict["weight"]
+                scores_sp = self.model.score_sp(
+                    s=triples[:,0], p=triples[:,1], o=modality_dict["all_idx"],
+                    s_modality="struct", o_modality=modality
+                )
+                loss_value_sp = (
+                    weight * self.loss(
+                        # the index has to be shifted so that the start is at 0
+                        # for each modality
+                        scores_sp, triples[:, 2] - modality_dict["entity_start_idx"] 
+                    ) / batch_size
+                )
+                result.avg_loss += loss_value_sp.item()
+                result.forward_time += time.time()
+                result.backward_time = -time.time()
+                if not self.is_forward_only:
+                    loss_value_sp.backward()
+                result.backward_time += time.time()
+                # forward/backward pass (po)
+                if modality == "struct": 
+                    result.forward_time -= time.time()
+                    scores_po = self.model.score_po(
+                        p=triples[:, 1], o=triples[:, 2], s=modality_dict["all_idx"],
+                    s_modality="struct", o_modality=modality
+                    )
+                    loss_value_po = (
+                        weight * self.loss(scores_po, triples[:, 0]) / batch_size
+                    )
+                    result.avg_loss += loss_value_po.item()
+                    result.forward_time += time.time()
+                    result.backward_time -= time.time()
+                    if not self.is_forward_only:
+                        loss_value_po.backward()
+                    result.backward_time += time.time()
+        else:
+            # prepare
+            result.prepare_time -= time.time()
+            triples = batch["triples"][subbatch_slice].to(self.device)
+            batch_size = len(triples)
+            result.prepare_time += time.time()
+
+            # forward/backward pass (sp)
+            result.forward_time -= time.time()
+            scores_sp = self.model.score_sp(triples[:, 0], triples[:, 1])
+            loss_value_sp = self.loss(scores_sp, triples[:, 2]) / batch_size
+            result.avg_loss += loss_value_sp.item()
+            result.forward_time += time.time()
+            result.backward_time = -time.time()
+            if not self.is_forward_only:
+                loss_value_sp.backward()
+            result.backward_time += time.time()
+
+            # forward/backward pass (po)
+            result.forward_time -= time.time()
+            scores_po = self.model.score_po(triples[:, 1], triples[:, 2])
+            loss_value_po = self.loss(scores_po, triples[:, 0]) / batch_size
+            result.avg_loss += loss_value_po.item()
+            result.forward_time += time.time()
+            result.backward_time -= time.time()
+            if not self.is_forward_only:
+                loss_value_po.backward()
+            result.backward_time += time.time()

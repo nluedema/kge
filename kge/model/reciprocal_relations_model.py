@@ -64,13 +64,13 @@ class ReciprocalRelationsModel(KgeModel):
                 "undirected spo scores."
             )
 
-    def score_po(self, p, o, s=None):
+    def score_po(self, p, o, s=None, **kwargs):
         if s is None:
-            s = self.get_s_embedder().embed_all()
+            s = self.get_s_embedder().embed_all(modality=kwargs["s_modality"])
         else:
-            s = self.get_s_embedder().embed(s)
+            s = self.get_s_embedder().embed(s, modality=kwargs["s_modality"])
         p = self.get_p_embedder().embed(p + self.dataset.num_relations())
-        o = self.get_o_embedder().embed(o)
+        o = self.get_o_embedder().embed(o, modality=kwargs["o_modality"])
         return self._scorer.score_emb(o, p, s, combine="sp_")
 
     def score_so(self, s, o, p=None):

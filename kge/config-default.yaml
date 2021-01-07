@@ -135,6 +135,13 @@ model: ''
 
 # Options of training jobs (job.type=="train")
 train:
+  # If multimodal training as in MKBE should be used 
+  multimodal: False
+
+  # Additional arguments for the multimodal trainings mode
+  multimodal_args:
+    +++: +++
+
   # Split used for training (specified under 'dataset.files').
   split: train
 
