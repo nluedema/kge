@@ -370,3 +370,121 @@ def update_string_files(raw_dataset: RawDataset, args):
         if os.path.exists(os.path.join(args.folder, string_files[string])):
             raw_dataset.config[f"files.{string}.filename"] = string_files.get(string)
             raw_dataset.config[f"files.{string}.type"] = "idmap"
+
+@dataclass
+class RawMultimodalSplit(RawSplit):
+    modality_name: str = None
+
+def add_multimodal_to_raw_dataset(
+    raw_multimodal_splits: List[RawMultimodalSplit],
+    raw_struct_dataset: RawDataset,
+    folder: str
+) -> RawDataset:
+    # get struct train split
+    train_raw = raw_struct_dataset.raw_splits[0]
+    if train_raw.file != "train.txt":
+        raise ValueError("Expects the first element to be the raw train set")
+
+    entity_map = raw_struct_dataset.entity_map
+    relation_map = raw_struct_dataset.relation_map
+
+    relations_struct = relation_map.copy().keys()
+
+    # first pass to add any new struct entities
+    for raw_multimodal_split in raw_multimodal_splits:
+        with open(path.join(folder,raw_multimodal_split.file), "r") as f:
+            raw_multimodal_split.data = list(
+                map(lambda s: s.strip().split("\t"), f.readlines())
+            )
+            S  = raw_multimodal_split.field_map["S"]
+
+            for t in raw_multimodal_split.data:
+                if t[S] not in entity_map:
+                    entity_map[t[S]] = len(entity_map)
+    
+    # add struct config
+    raw_struct_dataset.config["files.train.modality.struct.entity.start_idx"] = 0
+    raw_struct_dataset.config["files.train.modality.struct.entity.end_idx"] = len(entity_map)
+    raw_struct_dataset.config["files.train.modality.struct.relation.start_idx"] = 0
+    raw_struct_dataset.config["files.train.modality.struct.relation.end_idx"] = len(relation_map)
+    raw_struct_dataset.config["files.train.modality.struct.size"] = train_raw.size
+    
+    # second pass to add multimodal triples to train split
+    for raw_multimodal_split in raw_multimodal_splits:
+        entity_start_idx = len(entity_map)
+        relation_start_idx = len(relation_map)
+
+        S, P, O = (
+            raw_multimodal_split.field_map["S"],
+            raw_multimodal_split.field_map["P"],
+            raw_multimodal_split.field_map["O"]
+        )
+        modality_name = raw_multimodal_split.modality_name
+
+        for i, t in enumerate(raw_multimodal_split.data):
+            if t[P] not in relation_map:
+                relation_map[t[P]] = len(relation_map)
+            if t[P] in relations_struct:
+                raise ValueError (f"{t[P]} is already a structural relation")
+            if train_raw.collect_relations:
+                train_raw.relations[t[P]] = relation_map[t[P]]
+
+            # create a name for the multimodal object and add to entity_map
+            object_name = f"{modality_name}_{i}"
+
+            if object_name not in entity_map:
+                entity_map[object_name] = len(entity_map)
+            else:
+                raise ValueError ("Cannot create an entity name that already exists")
+
+            # add multimodal triple to train split
+            train_raw.data.append(
+                [t[S],t[P],object_name]
+            )
+
+            if train_raw.collect_entities:
+                train_raw.entities[t[S]] = entity_map[t[S]]
+                train_raw.entities[object_name] = entity_map[object_name]
+        
+        # set raw_multimodal_split size
+        raw_multimodal_split.size = len(raw_multimodal_split.data)
+
+        # add modality to config 
+        raw_struct_dataset.config[
+            f"files.train.modality.{modality_name}.entity.start_idx"
+        ] = entity_start_idx
+        raw_struct_dataset.config[
+            f"files.train.modality.{modality_name}.entity.end_idx"
+        ] = len(entity_map)
+        raw_struct_dataset.config[
+            f"files.train.modality.{modality_name}.relation.start_idx"
+        ] = relation_start_idx
+        raw_struct_dataset.config[
+            f"files.train.modality.{modality_name}.relation.end_idx"
+        ] = len(relation_map)
+        raw_struct_dataset.config[
+            f"files.train.modality.{modality_name}.size"
+        ] = raw_multimodal_split.size
+        raw_struct_dataset.config[
+            f"files.train.modality.{modality_name}.filename"
+        ] = raw_multimodal_split.file
+
+        print(
+            f"Found {raw_multimodal_split.size}",
+            f"triples in {raw_multimodal_split.file}",
+            f"and added them to the triples from {train_raw.file}"
+        )
+    print(f"Increased number of distinct relations to {len(relation_map)}")
+    print(f"Increased number of distinct entities to {len(entity_map)}")
+
+    # update train_raw size
+    train_raw.size = len(train_raw.data)
+
+    # overwrite old config
+    raw_struct_dataset.config["num_entities"] = len(entity_map) 
+    raw_struct_dataset.config["num_relations"] = len(relation_map) 
+
+    # rewrite entity/relation maps and update config
+    write_maps(raw_struct_dataset)
+
+    return raw_struct_dataset
