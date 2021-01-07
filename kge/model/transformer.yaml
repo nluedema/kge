@@ -1,0 +1,23 @@
+import: [lookup_embedder]
+
+transformer:
+  class_name: Transformer
+  round_dim: False
+  entity_embedder:
+    type: lookup_embedder
+    #dropout: 0.0
+    dim: 320
+    initialize: normal_
+    normal_:
+      mean: 0.0
+      std: 0.02
+    +++: +++
+  relation_embedder:
+    type: lookup_embedder
+    #dropout: 0.0
+    dim: 320
+    initialize: normal_
+    normal_:
+      mean: 0.0
+      std: 0.02
+    +++: +++
