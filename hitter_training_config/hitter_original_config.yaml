@@ -13,8 +13,8 @@ train:
   batch_size: 512
   max_epochs: 500
   loss: kl
-  type: KvsAll
-  lr_warmup: 10
+  type: 1vsAll
+  lr_warmup: 50
 
 KvsAll:
   label_smoothing: 0.1

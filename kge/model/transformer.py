@@ -97,7 +97,8 @@ class TransformerScorer(RelationalScorer):
 
         # pick the transformed CLS embeddings
         out = out[0, ::]
-        out = self.dropout(out)
+
+        o_emb = self.dropout(o_emb)
 
         # now take dot product
         if combine == "sp_":
