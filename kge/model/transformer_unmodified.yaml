@@ -1,7 +1,7 @@
 import: [lookup_embedder]
 
-transformer:
-  class_name: Transformer
+transformer_unmodified:
+  class_name: TransformerUnmodified
   entity_embedder:
     type: lookup_embedder
     dim: 320

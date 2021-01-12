@@ -18,25 +18,17 @@ class TransformerScorer(RelationalScorer):
 
         # the CLS embedding
         self.cls_emb = torch.nn.parameter.Parameter(torch.zeros(self.emb_dim))
-        self.initialize(self.cls_emb)
-        self.cls_type_emb = torch.nn.parameter.Parameter(torch.zeros(self.emb_dim))
-        self.initialize(self.cls_type_emb)
         self.sub_type_emb = torch.nn.parameter.Parameter(torch.zeros(self.emb_dim))
-        self.initialize(self.sub_type_emb)
         self.rel_type_emb = torch.nn.parameter.Parameter(torch.zeros(self.emb_dim))
-        self.initialize(self.rel_type_emb)
 
         # TODO make all parameters configurable
         self.encoder_layer = torch.nn.TransformerEncoderLayer(
-            d_model=self.emb_dim, nhead=8, dim_feedforward=1280, dropout=0.1,
-            activation="gelu"
-        )
+            d_model=self.emb_dim, nhead=8, dim_feedforward=1280, dropout=0.1
+            )
         self.encoder = torch.nn.TransformerEncoder(self.encoder_layer, num_layers=3)
         for layer in self.encoder.layers:
             self.initialize(layer.linear1.weight.data)
             self.initialize(layer.linear2.weight.data)
-
-            self.initialize(layer.self_attn.out_proj.weight.data)
 
             if layer.self_attn._qkv_same_embed_dim:
                 self.initialize(layer.self_attn.in_proj_weight)
@@ -44,10 +36,6 @@ class TransformerScorer(RelationalScorer):
                 self.initialize(layer.self_attn.q_proj_weight)
                 self.initialize(layer.self_attn.k_proj_weight)
                 self.initialize(layer.self_attn.v_proj_weight)
-            
-        self.layer_norm = torch.nn.LayerNorm(self.emb_dim, eps=1e-12)
-
-        self.dropout = torch.nn.Dropout(0.6)
 
     def score_emb(self, s_emb, p_emb, o_emb, combine: str):
         if combine not in ["sp_", "spo"]:
@@ -59,23 +47,19 @@ class TransformerScorer(RelationalScorer):
 
         # transform the sp pairs
         batch_size = len(s_emb)
-        embeddings = torch.stack(
-            (
-                self.cls_emb.repeat((batch_size, 1)) + self.cls_type_emb.unsqueeze(0),
-                s_emb + self.sub_type_emb.unsqueeze(0),
-                p_emb + self.rel_type_emb.unsqueeze(0),
-            ),
-            dim=0,
-        ) # SxNxE = 3 x batch_size x emb_size
-        embeddings = self.layer_norm(embeddings)
-        embeddings = self.dropout(embeddings)
-
-        out = self.encoder.forward(embeddings)
+        out = self.encoder.forward(
+            torch.stack(
+                (
+                    self.cls_emb.repeat((batch_size, 1)),
+                    s_emb + self.sub_type_emb.unsqueeze(0),
+                    p_emb + self.rel_type_emb.unsqueeze(0),
+                ),
+                dim=0,
+            )
+        )  # SxNxE = 3 x batch_size x emb_size
 
         # pick the transformed CLS embeddings
         out = out[0, ::]
-
-        o_emb = self.dropout(o_emb)
 
         # now take dot product
         if combine == "sp_":
@@ -89,7 +73,7 @@ class TransformerScorer(RelationalScorer):
         return out.view(batch_size, -1)
 
 
-class Transformer(KgeModel):
+class TransformerUnmodified(KgeModel):
     r"""Implementation of the Transformer KGE model."""
 
     def __init__(

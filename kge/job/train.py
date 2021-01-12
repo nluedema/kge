@@ -195,23 +195,11 @@ class TrainingJob(TrainingOrEvaluationJob):
                 break
 
             # update learning rate if warmup is used
-            # linear increase until warmup, then decrease for the remaining steps 
             if self.epoch < self._lr_warmup:
                 initial_lr = self.config.get("train.optimizer.default.args.lr")
                 next_lr = initial_lr * (self.epoch+1) / self._lr_warmup
                 for group in self.optimizer.param_groups:
                     group["lr"] = next_lr
-            if self.epoch >= self._lr_warmup and self._lr_warmup > 0: 
-                initial_lr = self.config.get("train.optimizer.default.args.lr")
-                max_epochs = self.config.get("train.max_epochs")
-                reduction_lr = (
-                    (self.epoch + 1 - self._lr_warmup) /
-                    (max_epochs - self._lr_warmup)
-                )
-                next_lr = initial_lr * (1 - reduction_lr)
-                for group in self.optimizer.param_groups:
-                    group["lr"] = next_lr
-                print(f"LR adjusted to: {next_lr}")
 
             # start a new epoch
             self.epoch += 1
