@@ -260,7 +260,7 @@ class BatchNegativeSample(Configurable):
         self.positive_triples = self.positive_triples.to(device)
         return self
 
-    def score(self, model, indexes=None) -> torch.Tensor:
+    def score(self, model, indexes=None, **kwargs) -> torch.Tensor:
         """Score the negative samples for the batch with the provided model.
 
         If `indexes` is provided, only score the corresponding subset of the batch.
@@ -280,8 +280,12 @@ class BatchNegativeSample(Configurable):
         negative_samples = self.samples(indexes)
         num_samples = self.num_samples
         triples = (
-            self.positive_triples[indexes, :] if indexes else self.positive_triples
+            self.positive_triples[indexes, :] if indexes is not None else self.positive_triples
         )
+        #TODO: check that indexes is the same with torch.nonzero and subbatch_slice
+        #if self.config.get("train.multimodal"):
+        #    negative_samples = negative_samples[kwargs["triples_modality_idx"],:]
+        #    triples = triples[kwargs["triples_modality_idx"],:]
         self.prepare_time += time.time()
 
         # go ahead and score
@@ -302,6 +306,7 @@ class BatchNegativeSample(Configurable):
                 triples_to_score[:, P],
                 triples_to_score[:, O],
                 direction=SLOT_STR[slot],
+                **kwargs
             ).view(chunk_size, -1)
             self.forward_time += time.time()
         elif self._implementation in ["batch", "all"]:
@@ -320,7 +325,7 @@ class BatchNegativeSample(Configurable):
             # compute all scores for slot
             self.forward_time -= time.time()
             all_scores = self._score_unique_targets(
-                model, slot, triples, unique_targets
+                model, slot, triples, unique_targets, **kwargs
             )
             self.forward_time += time.time()
 
@@ -344,13 +349,13 @@ class BatchNegativeSample(Configurable):
         return scores
 
     @staticmethod
-    def _score_unique_targets(model, slot, triples, unique_targets) -> torch.Tensor:
+    def _score_unique_targets(model, slot, triples, unique_targets, **kwargs) -> torch.Tensor:
         if slot == S:
             all_scores = model.score_po(triples[:, P], triples[:, O], unique_targets)
         elif slot == P:
             all_scores = model.score_so(triples[:, S], triples[:, O], unique_targets)
         elif slot == O:
-            all_scores = model.score_sp(triples[:, S], triples[:, P], unique_targets)
+            all_scores = model.score_sp(triples[:, S], triples[:, P], unique_targets, **kwargs)
         else:
             raise NotImplementedError
         return all_scores
@@ -588,11 +593,72 @@ class DefaultSharedNegativeSample(BatchNegativeSample):
 class KgeUniformSampler(KgeSampler):
     def __init__(self, config: Config, configuration_key: str, dataset: Dataset):
         super().__init__(config, configuration_key, dataset)
+        if config.get("train.multimodal"):
+            import yaml
+            with open(f"{dataset.folder}/dataset.yaml", "r") as f:
+                self.dataset_yaml = yaml.load(f, Loader=yaml.SafeLoader)["dataset"]
+
+            self.modalities = {}
+            prefix = "files.train.modality"
+            for modality in self.config.get("train.multimodal_args.modalities"):
+                entity_start_idx = self.dataset_yaml[
+                    f"{prefix}.{modality}.entity.start_idx"
+                ]
+                entity_end_idx = self.dataset_yaml[
+                    f"{prefix}.{modality}.entity.end_idx"
+                ]
+                relation_start_idx = self.dataset_yaml[
+                    f"{prefix}.{modality}.relation.start_idx"
+                ]
+                relation_end_idx = self.dataset_yaml[
+                    f"{prefix}.{modality}.relation.end_idx"
+                ]
+                self.modalities[modality] = {
+                    "entity_start_idx":entity_start_idx,
+                    "entity_end_idx":entity_end_idx,
+                    "relation_start_idx":relation_start_idx,
+                    "relation_end_idx":relation_end_idx
+                }
 
     def _sample(self, positive_triples: torch.Tensor, slot: int, num_samples: int):
-        return torch.randint(
-            self.vocabulary_size[slot], (positive_triples.size(0), num_samples)
-        )
+        if self.config.get("train.multimodal"):
+            if slot == S:
+                start_idx = self.modalities["struct"]["entity_start_idx"]
+                end_idx = self.modalities["struct"]["entity_end_idx"]
+                return torch.randint(
+                    low=start_idx,high=end_idx,
+                    size=(positive_triples.size(0),num_samples)
+                )
+            elif slot == O:
+                negatives = torch.empty(
+                    (positive_triples.size(0),num_samples),dtype=torch.long
+                )
+                for modality, modality_dict in self.modalities.items():
+                    positive_triples_modality_idx = ( 
+                        (modality_dict["relation_start_idx"] <= positive_triples[:,1])
+                        & (positive_triples[:,1] < modality_dict["relation_end_idx"])
+                    )
+
+                    start_idx = modality_dict["entity_start_idx"]
+                    end_idx = modality_dict["entity_end_idx"]
+
+                    negatives[positive_triples_modality_idx,:] = torch.randint(
+                        low=start_idx,high=end_idx,
+                        size=(positive_triples_modality_idx.sum().item(),num_samples)
+                    )
+                return negatives
+            elif slot == P:
+                if num_samples > 0:
+                    raise ValueError (
+                        "Multimodal does not work with corrupted predicates"
+                    )
+                return torch.randint(
+                    self.vocabulary_size[slot], (positive_triples.size(0), num_samples)
+                )
+        else:
+            return torch.randint(
+                self.vocabulary_size[slot], (positive_triples.size(0), num_samples)
+            )
 
     def _sample_shared(
         self, positive_triples: torch.Tensor, slot: int, num_samples: int

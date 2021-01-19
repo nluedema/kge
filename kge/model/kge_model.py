@@ -665,7 +665,7 @@ class KgeModel(KgeBase):
     def get_scorer(self) -> RelationalScorer:
         return self._scorer
 
-    def score_spo(self, s: Tensor, p: Tensor, o: Tensor, direction=None) -> Tensor:
+    def score_spo(self, s: Tensor, p: Tensor, o: Tensor, direction=None, **kwargs) -> Tensor:
         r"""Compute scores for a set of triples.
 
         `s`, `p`, and `o` are vectors of common size :math:`n`, holding the indexes of
@@ -681,7 +681,7 @@ class KgeModel(KgeBase):
         """
         s = self.get_s_embedder().embed(s)
         p = self.get_p_embedder().embed(p)
-        o = self.get_o_embedder().embed(o)
+        o = self.get_o_embedder().embed(o, **kwargs)
         return self._scorer.score_emb(s, p, o, combine="spo").view(-1)
 
     def score_sp(self, s: Tensor, p: Tensor, o: Tensor = None, **kwargs) -> Tensor:
@@ -697,12 +697,12 @@ class KgeModel(KgeBase):
         If `o` is not None, it is a vector holding the indexes of the objects to score.
 
         """
-        s = self.get_s_embedder().embed(s, modality=kwargs["s_modality"])
+        s = self.get_s_embedder().embed(s)
         p = self.get_p_embedder().embed(p)
         if o is None:
-            o = self.get_o_embedder().embed_all(modality=kwargs["o_modality"])
+            o = self.get_o_embedder().embed_all(**kwargs)
         else:
-            o = self.get_o_embedder().embed(o, modality=kwargs["o_modality"])
+            o = self.get_o_embedder().embed(o, **kwargs)
 
         return self._scorer.score_emb(s, p, o, combine="sp_")
 
@@ -720,11 +720,10 @@ class KgeModel(KgeBase):
 
         """
         if s is None:
-            s = self.get_s_embedder().embed_all(modality=kwargs["s_modality"])
+            s = self.get_s_embedder().embed_all()
         else:
-            s = self.get_s_embedder().embed(s, modality=kwargs["s_modality"])
-        kwargs["modality"]=kwargs["o_modality"]
-        o = self.get_o_embedder().embed(o, modality=kwargs["o_modality"])
+            s = self.get_s_embedder().embed(s)
+        o = self.get_o_embedder().embed(o, **kwargs)
         p = self.get_p_embedder().embed(p)
 
         return self._scorer.score_emb(s, p, o, combine="_po")

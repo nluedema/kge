@@ -919,6 +919,38 @@ class TrainingJobNegativeSampling(TrainingJob):
             for f in Job.job_created_hooks:
                 f(self)
 
+        if self.config.get("train.multimodal"):
+            # load dataset yaml
+            import yaml
+            with open(f"{self.dataset.folder}/dataset.yaml", "r") as f:
+                self.dataset_yaml = yaml.load(f, Loader=yaml.SafeLoader)["dataset"]
+            
+            self.modalities = {}
+            prefix = "files.train.modality"
+            for modality in self.config.get("train.multimodal_args.modalities"):
+                weight = self.config.get(
+                    f"train.multimodal_args.{modality}.weight"
+                )
+                entity_start_idx = self.dataset_yaml[
+                    f"{prefix}.{modality}.entity.start_idx"
+                ]
+                entity_end_idx = self.dataset_yaml[
+                    f"{prefix}.{modality}.entity.end_idx"
+                ]
+                relation_start_idx = self.dataset_yaml[
+                    f"{prefix}.{modality}.relation.start_idx"
+                ]
+                relation_end_idx = self.dataset_yaml[
+                    f"{prefix}.{modality}.relation.end_idx"
+                ]
+                self.modalities[modality] = {
+                    "weight":weight,
+                    "entity_start_idx":entity_start_idx,
+                    "entity_end_idx":entity_end_idx,
+                    "relation_start_idx":relation_start_idx,
+                    "relation_end_idx":relation_end_idx,
+                }
+
     def _prepare(self):
         """Construct dataloader"""
         super()._prepare()
@@ -984,7 +1016,7 @@ class TrainingJobNegativeSampling(TrainingJob):
         result.prepare_time -= time.time()
         triples = batch["triples"][subbatch_slice]
         batch_negative_samples = batch["negative_samples"]
-        batch_size = len(batch["triples"])
+        batch_size = result.size
         subbatch_size = len(triples)
         result.prepare_time += time.time()
         labels = batch["labels"]  # reuse b/w subbatches
@@ -1007,33 +1039,90 @@ class TrainingJobNegativeSampling(TrainingJob):
                 )
                 labels[slot][:, 0] = 1
                 result.prepare_time += time.time()
+            
+            if self.config.get("train.multimodal"):
+                if slot == P:
+                    raise ValueError("Cannot corrupt P for multimodal")
 
-            # compute the scores
-            result.forward_time -= time.time()
-            scores = torch.empty((subbatch_size, num_samples + 1), device=self.device)
-            scores[:, 0] = self.model.score_spo(
-                triples[:, S], triples[:, P], triples[:, O], direction=SLOT_STR[slot],
-            )
-            result.forward_time += time.time()
-            scores[:, 1:] = batch_negative_samples[slot].score(
-                self.model, indexes=subbatch_slice
-            )
-            result.forward_time += batch_negative_samples[slot].forward_time
-            result.prepare_time += batch_negative_samples[slot].prepare_time
+                for modality, modality_dict in self.modalities.items():
+                    # mkbe scores modalities only in the O direction
+                    if slot == S and modality != "struct":
+                        continue
 
-            # compute loss for slot in subbatch (concluding the forward pass)
-            result.forward_time -= time.time()
-            loss_value_torch = (
-                self.loss(scores, labels[slot], num_negatives=num_samples) / batch_size
-            )
-            result.avg_loss += loss_value_torch.item()
-            result.forward_time += time.time()
+                    result.prepare_time -= time.time()
+                    triples_modality_idx = (
+                        (modality_dict["relation_start_idx"] <= triples[:,1])
+                        & (triples[:,1] < modality_dict["relation_end_idx"])
+                    )
+                    subbatch_size_modality = triples_modality_idx.sum().item()
+                    result.prepare_time += time.time()
+                    if subbatch_size_modality < 1:
+                        continue
 
-            # backward pass for this slot in the subbatch
-            result.backward_time -= time.time()
-            if not self.is_forward_only:
-                loss_value_torch.backward()
-            result.backward_time += time.time()
+                    # compute the scores
+                    result.forward_time -= time.time()
+                    scores = torch.empty((subbatch_size_modality, num_samples + 1), device=self.device)
+                    scores[:, 0] = self.model.score_spo(
+                        triples[triples_modality_idx, S],
+                        triples[triples_modality_idx, P],
+                        triples[triples_modality_idx, O],
+                        direction=SLOT_STR[slot],
+                        modality=modality
+                    )
+                    result.forward_time += time.time()
+                    #TODO: check that nonzero same as subbatch slice => remove triples_modality_idx
+                    scores[:, 1:] = batch_negative_samples[slot].score(
+                        # have to specify dimension, for the case that there is only a single multimodal triple
+                        # in that case squeeze without dimension would return for [[0]] 0, instead of [0]
+                        # which would lead to problems down the line, because the indices wouldn't index correctly
+                        self.model, indexes=torch.nonzero(triples_modality_idx).squeeze(dim=1),#subbatch_slice,
+                        triples_modality_idx=triples_modality_idx, modality=modality
+                    )
+                    result.forward_time += batch_negative_samples[slot].forward_time
+                    result.prepare_time += batch_negative_samples[slot].prepare_time
+
+                    # compute loss for slot in subbatch (concluding the forward pass)
+                    result.forward_time -= time.time()
+                    loss_value_torch = (
+                        modality_dict["weight"] * self.loss(
+                            scores, labels[slot][triples_modality_idx,:], num_negatives=num_samples
+                        ) / batch_size
+                    )
+                    result.avg_loss += loss_value_torch.item()
+                    result.forward_time += time.time()
+
+                    # backward pass for this slot in the subbatch
+                    result.backward_time -= time.time()
+                    if not self.is_forward_only:
+                        loss_value_torch.backward()
+                    result.backward_time += time.time()
+            else:
+                # compute the scores
+                result.forward_time -= time.time()
+                scores = torch.empty((subbatch_size, num_samples + 1), device=self.device)
+                scores[:, 0] = self.model.score_spo(
+                    triples[:, S], triples[:, P], triples[:, O], direction=SLOT_STR[slot],
+                )
+                result.forward_time += time.time()
+                scores[:, 1:] = batch_negative_samples[slot].score(
+                    self.model, indexes=subbatch_slice
+                )
+                result.forward_time += batch_negative_samples[slot].forward_time
+                result.prepare_time += batch_negative_samples[slot].prepare_time
+
+                # compute loss for slot in subbatch (concluding the forward pass)
+                result.forward_time -= time.time()
+                loss_value_torch = (
+                    self.loss(scores, labels[slot], num_negatives=num_samples) / batch_size
+                )
+                result.avg_loss += loss_value_torch.item()
+                result.forward_time += time.time()
+
+                # backward pass for this slot in the subbatch
+                result.backward_time -= time.time()
+                if not self.is_forward_only:
+                    loss_value_torch.backward()
+                result.backward_time += time.time()
 
 
 class TrainingJob1vsAll(TrainingJob):
@@ -1122,9 +1211,9 @@ class TrainingJob1vsAll(TrainingJob):
             # prepare
             result.prepare_time -= time.time()
             triples = batch["triples"][subbatch_slice]
+            batch_size = result.size 
 
             triples_per_modality = {}
-            batch_size_per_modality = {}
 
             for modality, modality_dict in self.modalities.items():
                 triples_per_modality[modality] = triples[
@@ -1132,20 +1221,16 @@ class TrainingJob1vsAll(TrainingJob):
                     & (triples[:,1] < modality_dict["relation_end_idx"])
                     ,:
                 ].to(self.device)
-                batch_size_per_modality[modality] = len(
-                    triples_per_modality[modality]
-                )
             result.prepare_time += time.time()
 
             # forward/backward pass (sp)
             for modality, modality_dict in self.modalities.items():
                 result.forward_time -= time.time()
                 triples = triples_per_modality[modality]
-                batch_size = batch_size_per_modality[modality]
                 weight = modality_dict["weight"]
                 scores_sp = self.model.score_sp(
                     s=triples[:,0], p=triples[:,1], o=modality_dict["all_idx"],
-                    s_modality="struct", o_modality=modality
+                    modality=modality
                 )
                 loss_value_sp = (
                     weight * self.loss(
@@ -1165,7 +1250,7 @@ class TrainingJob1vsAll(TrainingJob):
                     result.forward_time -= time.time()
                     scores_po = self.model.score_po(
                         p=triples[:, 1], o=triples[:, 2], s=modality_dict["all_idx"],
-                    s_modality="struct", o_modality=modality
+                    modality=modality
                     )
                     loss_value_po = (
                         weight * self.loss(scores_po, triples[:, 0]) / batch_size
@@ -1180,7 +1265,8 @@ class TrainingJob1vsAll(TrainingJob):
             # prepare
             result.prepare_time -= time.time()
             triples = batch["triples"][subbatch_slice].to(self.device)
-            batch_size = len(triples)
+            #batch_size = len(triples)
+            batch_size = result.size 
             result.prepare_time += time.time()
 
             # forward/backward pass (sp)

@@ -35,6 +35,14 @@ class EvaluationJob(TrainingOrEvaluationJob):
     def create(config, dataset, parent_job=None, model=None):
         """Factory method to create an evaluation job """
         from kge.job import EntityRankingJob, EntityPairRankingJob
+        # MKBE HACK
+        # creates memory overhead???????
+        if config.get("train.multimodal"):
+            import copy
+            dataset_name = config.get("train.multimodal_args.dataset_eval")
+            config_eval = copy.deepcopy(config)
+            config_eval.set("dataset.name",dataset_name)
+            dataset = Dataset.create(config_eval)
 
         # create the job
         if config.get("eval.type") == "entity_ranking":

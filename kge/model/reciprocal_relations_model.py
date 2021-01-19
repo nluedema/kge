@@ -53,11 +53,11 @@ class ReciprocalRelationsModel(KgeModel):
     def penalty(self, **kwargs):
         return self._base_model.penalty(**kwargs)
 
-    def score_spo(self, s: Tensor, p: Tensor, o: Tensor, direction=None) -> Tensor:
+    def score_spo(self, s: Tensor, p: Tensor, o: Tensor, direction=None, **kwargs) -> Tensor:
         if direction == "o":
-            return super().score_spo(s, p, o, "o")
+            return super().score_spo(s, p, o, "o", **kwargs)
         elif direction == "s":
-            return super().score_spo(o, p + self.dataset.num_relations(), s, "o")
+            return super().score_spo(o, p + self.dataset.num_relations(), s, "o", **kwargs)
         else:
             raise Exception(
                 "The reciprocal relations model cannot compute "
@@ -66,11 +66,11 @@ class ReciprocalRelationsModel(KgeModel):
 
     def score_po(self, p, o, s=None, **kwargs):
         if s is None:
-            s = self.get_s_embedder().embed_all(modality=kwargs["s_modality"])
+            s = self.get_s_embedder().embed_all()
         else:
-            s = self.get_s_embedder().embed(s, modality=kwargs["s_modality"])
+            s = self.get_s_embedder().embed(s)
         p = self.get_p_embedder().embed(p + self.dataset.num_relations())
-        o = self.get_o_embedder().embed(o, modality=kwargs["o_modality"])
+        o = self.get_o_embedder().embed(o, **kwargs)
         return self._scorer.score_emb(o, p, s, combine="sp_")
 
     def score_so(self, s, o, p=None):
