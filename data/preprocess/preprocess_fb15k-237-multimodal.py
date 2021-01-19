@@ -47,29 +47,16 @@ import string
 #    
 #    return triples_by_predicate.keys()
 
+# TODO: Remove Fb15K triples not in fb15k-237???
 def preprocess_text(file, modality_name, args):
     with open(path.join(args.folder, file), "r") as f:
         data = list(
             map(lambda s: s.strip().split("\t"), f.readlines())
         )
     
-    glove = api.load("glove-wiki-gigaword-300")
-    punctuation = list(string.punctuation)
-    stopwords = set(nltk.corpus.stopwords.words('english'))
-
     with open(path.join(args.folder, f"{modality_name}_preprocessed.txt"), "w") as f:
         for t in data:
-            sents = nltk.tokenize.sent_tokenize(t[1])
-            final = []
-            for sent in sents:
-                sent = sent.lower()
-                sent = nltk.tokenize.word_tokenize(sent)
-                for w in sent:
-                    if w not in stopwords and w not in punctuation and w in glove:
-                        final.append(w)
-            if len(final) >= 3:
-                final_str = " ".join(final)
-                f.write(f"{t[0]}\t{modality_name}\t{final_str}\n")
+            f.write(f"{t[0]}\t{modality_name}\t{t[2]}\n")
 
 if __name__ == "__main__":
     args = util.default_parser().parse_args()
@@ -99,7 +86,7 @@ if __name__ == "__main__":
     raw_multimodal_splits = []
     if args.modality in ["all","text"]:
         text_modality_name = "hasDescription"
-        preprocess_text("text_description.txt", text_modality_name , args)
+        preprocess_text("entityWords.txt", text_modality_name , args)
         text_raw = util.RawMultimodalSplit(
             file=f"{text_modality_name}_preprocessed.txt",
             field_map = {
@@ -111,17 +98,17 @@ if __name__ == "__main__":
         )
         raw_multimodal_splits.append(text_raw) 
 
-    if args.modality in ["all","numeric"]:
-        numeric_raw = util.RawMultimodalSplit(
-            file="numerical_data_merged.txt",
-            field_map = {
-                "S": 0,
-                "P": 1,
-                "O": 2
-            },
-            modality_name="hasDate"
-        )
-        raw_multimodal_splits.append(numeric_raw) 
+    #if args.modality in ["all","numeric"]:
+    #    numeric_raw = util.RawMultimodalSplit(
+    #        file="numerical_data_merged.txt",
+    #        field_map = {
+    #            "S": 0,
+    #            "P": 1,
+    #            "O": 2
+    #        },
+    #        modality_name="hasDate"
+    #    )
+    #    raw_multimodal_splits.append(numeric_raw) 
 
     raw_dataset = util.add_multimodal_to_raw_dataset(
         raw_multimodal_splits,raw_dataset, folder=args.folder

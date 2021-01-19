@@ -287,6 +287,7 @@ class FilteredLabeledSplit(FilteredSplit):
 def default_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("folder", type=str)
+    parser.add_argument("--modality", "-M", action="store", default="all", type=str)
     parser.add_argument("--subject-field", "-S", action="store", default=0, type=int)
     parser.add_argument("--predicate-field", "-P", action="store", default=1, type=int)
     parser.add_argument("--object-field", "-O", action="store", default=2, type=int)
