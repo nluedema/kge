@@ -7,6 +7,7 @@ from kge.model.embedder.tucker3_relation_embedder import Tucker3RelationEmbedder
 
 from kge.model.embedder.multimodal_embedder import MultimodalEmbedder
 from kge.model.embedder.numeric_embedder import NumericEmbedder
+from kge.model.embedder.text_embedder import TextEmbedder
 
 # models
 from kge.model.complex import ComplEx

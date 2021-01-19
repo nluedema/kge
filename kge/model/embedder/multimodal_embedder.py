@@ -37,7 +37,7 @@ class MultimodalEmbedder(KgeEmbedder):
             self.dataset_yaml = yaml.load(f, Loader=yaml.SafeLoader)["dataset"]
 
         # create embedder for each modality
-        self.embedder = {}
+        self.embedder = torch.nn.ModuleDict()
         prefix = "files.train.modality"
         for modality in self.config.get("train.multimodal_args.modalities"):
             entity_start_idx = self.dataset_yaml[
@@ -109,7 +109,10 @@ class MultimodalEmbedder(KgeEmbedder):
             self.embedder[modality].prepare_job(job, **kwargs)
 
     def embed(self, indexes: Tensor, **kwargs) -> Tensor:
-        modality = kwargs["modality"]
+        if "modality" in kwargs:
+            modality = kwargs["modality"]
+        else:
+            modality = "struct"
         return self._postprocess(self.embedder[modality].embed(indexes))
 
     def embed_all(self, **kwargs) -> Tensor:
