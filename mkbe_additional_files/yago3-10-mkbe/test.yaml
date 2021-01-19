@@ -1,7 +1,7 @@
 job.type: train
 dataset.name: yago3-10-mkbe
 
-import: [complex, multimodal_embedder, numeric_embedder]
+import: [complex, multimodal_embedder, numeric_embedder, text_embedder]
 model: reciprocal_relations_model
 reciprocal_relations_model.base_model.type: complex
 
@@ -24,14 +24,18 @@ multimodal_embedder:
     normalization: z-score
     dropout: 0.15
     regularize_weight: 1.0e-15
+  hasDescription:
+    type: text_embedder
 
 train:
   multimodal: True
   multimodal_args:
-    modalities: ['struct', 'hasDate']
+    modalities: ['struct', 'hasDate', 'hasDescription']
     struct:
       weight: 1
     hasDate:
+      weight: 1
+    hasDescription:
       weight: 1
   optimizer: Adagrad
   auto_correct: true
@@ -52,7 +56,7 @@ train:
 valid:
   early_stopping:
     patience: 5
-  every: 3
+  every: 5
   metric: mean_reciprocal_rank_filtered_with_test
 
 lookup_embedder:

@@ -1,0 +1,72 @@
+job.type: train
+dataset.name: fb15k-237-mkbe-text
+
+import: [complex, multimodal_embedder, text_embedder]
+model: reciprocal_relations_model
+reciprocal_relations_model.base_model.type: complex
+
+complex:
+  entity_embedder:
+    type: multimodal_embedder 
+  relation_embedder:
+    dim: 256
+    dropout: 0.22684140529516872
+    regularize_weight: 8.266519211068944e-14
+
+multimodal_embedder:
+  dim: 256
+  struct:
+    type: lookup_embedder
+    regularize_weight: 1.3408200403806817e-08
+    dropout: 0.5
+  hasDescription:
+    type: text_embedder
+    dropout: 0.2
+    missing_words: random
+    initialize: xavier_normal_
+
+negative_sampling:
+  implementation: batch
+  num_samples:
+    o: 250
+    p: 0
+    s: 125
+train:
+  multimodal: True
+  multimodal_args:
+    dataset_eval: fb15k-237
+    modalities: ['struct', 'hasDescription']
+    struct:
+      weight: 1
+    hasDescription:
+      weight: 1
+  optimizer: Adagrad
+  auto_correct: true
+  batch_size: 64
+  loss_arg: 1.0
+  lr_scheduler: ReduceLROnPlateau
+  lr_scheduler_args:
+    factor: 0.95
+    mode: max
+    patience: 7
+    threshold: 0.0001
+  max_epochs: 400
+  optimizer_args:
+    lr: 0.18255429345236635
+  type: negative_sampling
+  loss: kl
+
+valid:
+  early_stopping:
+    patience: 5
+  every: 5
+  metric: mean_reciprocal_rank_filtered_with_test
+
+lookup_embedder:
+  initialize: uniform_
+  initialize_args:
+    uniform_:
+      a: -0.8328168489829233
+  regularize_args:
+    p: 3
+    #weighted: true # Debug THIS!!!!!
