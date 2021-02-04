@@ -1,0 +1,13 @@
+import: [lookup_embedder]
+
+dkrl_embedder:
+  class_name: DKRLEmbedder
+  dim: 200
+  modalities: ['struct']
+  struct:
+    type: lookup_embedder
+    +++: +++
+  +++: +++                    # allow to add additional modalities to dkrl_embedder
+  dropout: 0.                 # dropout used for text embeddings
+  regularize_args:
+    weighted: False

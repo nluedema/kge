@@ -1,0 +1,14 @@
+import: [lookup_embedder, dkrl_embedder]
+
+dkrl_model:
+  class_name: DKRLModel
+  entity_embedder:
+    type: dkrl_embedder
+    +++: +++
+  relation_embedder:
+    type: lookup_embedder
+    +++: +++
+  base_scorer:
+    type: transe                     # has to match file name of model
+    class_name: TransEScorer         # class_name of base scorer
+  modality_weight: 1                 # used in the scoring function
