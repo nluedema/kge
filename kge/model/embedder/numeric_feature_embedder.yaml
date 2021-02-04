@@ -1,0 +1,6 @@
+numeric_feature_embedder:
+  class_name: NumericFeatureEmbedder
+  dim: 0                      # unused, will be set depending on number of numeric attributes
+  filename: ''                # specifies where the numeric data is stored
+  normalization: 'min-max'    # 'min-max', 'z-score' 
+  dropout: 0.                 # dropout used for numeric features
