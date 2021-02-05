@@ -1,32 +1,42 @@
 from torch import Tensor
-import torch.nn
-import torch.nn.functional
+import torch
 
 from kge import Config, Dataset
 from kge.job import Job
 from kge.model import KgeEmbedder
-from kge.misc import round_to_points
 
 from typing import List
 
 class NumericMLP(torch.nn.Module):
     def __init__(
         self,
-        dim
+        dim,
+        num_layers,
+        activation,
     ):
         super().__init__()
+        if activation == "tanh":
+            self.activation = torch.nn.Tanh()
+        elif activation == "relu":
+            self.activation = torch.nn.ReLU()
+        else:
+            raise ValueError("unkown activation function specified")
 
-        self.lin_1 = torch.nn.Linear(1,dim)
-        self.lin_2 = torch.nn.Linear(dim,dim)
+        self.lin = torch.nn.ModuleList([])
+        self.lin.append(torch.nn.Linear(1,dim))
+        for i in range(1,num_layers):
+            self.lin.append(torch.nn.Linear(dim,dim))
 
     def forward(self, numeric_data):
-        lin_1 = torch.tanh(self.lin_1(numeric_data))
-        lin_2 = torch.tanh(self.lin_2(lin_1))
+        output = numeric_data
+        for l in self.lin:
+            output = l(output)
+            output = self.activation(output)
 
-        return lin_2
+        return output
 
 
-class NumericEmbedder(KgeEmbedder):
+class NumericMLPEmbedder(KgeEmbedder):
     def __init__(
         self,
         config: Config,
@@ -45,40 +55,70 @@ class NumericEmbedder(KgeEmbedder):
         self.vocab_size = vocab_size
 
         if self.dim < 0:
-            raise ValueError ("dimension was not initialized by multimodal_embedder")
+            raise ValueError ("dim was not initialized by multimodal_embedder")
         
         self.start_idx = self.get_option("start_idx")
-        if self.dim < 0:
+        if self.start_idx < 0:
             raise ValueError ("start_idx was not initialized by multimodal_embedder")
 
         self.filename = self.get_option("filename")
         if self.filename == "":
             raise ValueError ("filename was not initialized by multimodal_embedder")
 
-        # load numeric triples
+        # load numeric data
         with open(self.filename,"r") as f:
             data = list(
                 map(lambda s: s.strip().split("\t"), f.readlines())
             )
         
+        rel_to_idx = {}
+        numeric_data_rel_idx = []
         numeric_data = []
         for t in data:
-            numeric_data.append(float(t[2]))
+            rel = t[1]
+            value = float(t[2])
+
+            if rel not in rel_to_idx:
+                rel_to_idx[rel] = len(rel_to_idx)
+            
+            numeric_data_rel_idx.append(rel_to_idx[rel])
+            numeric_data.append(value)
+
+        numeric_data_rel_idx = torch.tensor(
+            numeric_data_rel_idx, dtype=torch.long
+        ) 
         numeric_data = torch.tensor(
-            numeric_data,dtype=torch.float32,device=config.get("job.device")
+            numeric_data, dtype=torch.float32
         )
 
-        # normalization
-        normalization = self.get_option("normalization")
-        if normalization == "z-score":
-            mean = numeric_data.mean()
-            std = numeric_data.std()
-            numeric_data = (numeric_data - mean) / std
-        
-        self.numeric_data = numeric_data
+        # normalize numeric literals
+        if self.get_option("normalization") == "min-max":
+            for rel_idx in rel_to_idx.values():
+                sel = (rel_idx == numeric_data_rel_idx)
+                max_num = torch.max(numeric_data[sel]) 
+                min_num = torch.min(numeric_data[sel]) 
+                numeric_data[sel] = (
+                    (numeric_data[sel] - min_num) / (max_num - min_num + 1e-8)
+                )
+        elif self.get_option("normalization") == "z-score":
+            for rel_idx in rel_to_idx.values():
+                sel = (rel_idx == numeric_data_rel_idx)
+                mean = torch.mean(numeric_data[sel]) 
+                std = torch.std(numeric_data[sel]) 
+                numeric_data[sel] = (
+                    (numeric_data[sel] - mean) / std
+                )
+        else:
+            raise ValueError("Unkown normalization option")
+
+        self.numeric_data = numeric_data.to(self.config.get("job.device"))
 
         # initialize numeric MLP
-        self.numeric_mlp = NumericMLP(self.dim)
+        self.numeric_mlp = NumericMLP(
+            dim=self.dim,
+            num_layers=self.get_option("num_layers"),
+            activation=self.get_option("activation")
+        )
 
         if not init_for_load_only:
             # initialize weights
@@ -115,12 +155,19 @@ class NumericEmbedder(KgeEmbedder):
         return self._postprocess(self._embed(indexes.long()))
 
     def embed_all(self) -> Tensor:
-        raise ValueError("Should never be called, in multimodal setting")
+        return self._postprocess(self._embeddings_all())
 
     def _postprocess(self, embeddings: Tensor) -> Tensor:
         if self.dropout.p > 0:
             embeddings = self.dropout(embeddings)
         return embeddings
+    
+    def _embeddings_all(self) -> Tensor:
+        return self._embed(
+            torch.arange(
+                self.vocab_size, dtype=torch.long, device=self.config.get("job.device")
+            )
+        )
 
     def _get_regularize_weight(self) -> Tensor:
         return self.get_option("regularize_weight")

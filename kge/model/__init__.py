@@ -6,8 +6,8 @@ from kge.model.embedder.projection_embedder import ProjectionEmbedder
 from kge.model.embedder.tucker3_relation_embedder import Tucker3RelationEmbedder
 
 from kge.model.embedder.multimodal_embedder import MultimodalEmbedder
-from kge.model.embedder.numeric_embedder import NumericEmbedder
-from kge.model.embedder.text_embedder import TextEmbedder
+from kge.model.embedder.text_cnn_embedder import TextCNNEmbedder
+from kge.model.embedder.numeric_mlp_embedder import NumericMLPEmbedder
 
 # models
 from kge.model.complex import ComplEx

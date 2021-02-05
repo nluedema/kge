@@ -3,6 +3,7 @@ import: [lookup_embedder]
 multimodal_embedder:
   class_name: MultimodalEmbedder
   dim: 200
+  +++: +++                          # allow to add different modalities
   dropout: 0.
-  round_dim_to: []
-  +++: +++
+  regularize_args:
+    weighted: False
