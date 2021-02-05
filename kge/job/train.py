@@ -896,30 +896,18 @@ class TrainingJobNegativeSampling(TrainingJob):
         super().__init__(
             config, dataset, parent_job, model=model, forward_only=forward_only
         )
-        self._sampler = KgeSampler.create(config, "negative_sampling", dataset)
-        self._implementation = self.config.check(
-            "negative_sampling.implementation", ["triple", "all", "batch", "auto"],
-        )
-        if self._implementation == "auto":
-            max_nr_of_negs = max(self._sampler.num_samples)
-            if self._sampler.shared:
-                self._implementation = "batch"
-            elif max_nr_of_negs <= 30:
-                self._implementation = "triple"
-            elif max_nr_of_negs > 30:
-                self._implementation = "batch"
-
-        config.log(
-            "Initializing negative sampling training job with "
-            "'{}' scoring function ...".format(self._implementation)
-        )
-        self.type_str = "negative_sampling"
-
-        if self.__class__ == TrainingJobNegativeSampling:
-            for f in Job.job_created_hooks:
-                f(self)
-
         if self.config.get("train.multimodal"):
+            # check that the config works with multimodal
+            self.config.check(
+                "negative_sampling.sampling_type", ["uniform"],
+            )
+            self.config.check(
+                "negative_sampling.shared", [True],
+            )
+            self.config.check(
+                "train.subbatch_size", [-1],
+            )
+
             # load dataset yaml
             import yaml
             with open(f"{self.dataset.folder}/dataset.yaml", "r") as f:
@@ -943,13 +931,60 @@ class TrainingJobNegativeSampling(TrainingJob):
                 relation_end_idx = self.dataset_yaml[
                     f"{prefix}.{modality}.relation.end_idx"
                 ]
+
+                # make sure that struct is first in train.multimodal_args.modalities
+                # only structural entities can be subjects, therefore subject
+                # negatives have always to be structural independent of the modality
+                # predicates and objects are modality specific, which is why
+                # their negatives depend on the modality
+                if modality == "struct":
+                    num_entities_s = entity_end_idx - entity_start_idx
+                else:
+                    num_entities_s = (
+                        self.modalities["struct"]["entity_end_idx"] -
+                        self.modalities["struct"]["entity_start_idx"]
+                    )
+
+                num_relations = relation_end_idx - relation_start_idx
+                num_entities_o = entity_end_idx - entity_start_idx
+
+                _sampler = KgeSampler.create(
+                    config, "negative_sampling",dataset,
+                    num_entities_s=num_entities_s, num_relations=num_relations,
+                    num_entities_o=num_entities_o
+                )
                 self.modalities[modality] = {
                     "weight":weight,
                     "entity_start_idx":entity_start_idx,
                     "entity_end_idx":entity_end_idx,
                     "relation_start_idx":relation_start_idx,
                     "relation_end_idx":relation_end_idx,
+                    "_sampler":_sampler,
                 }
+        else:
+            self._sampler = KgeSampler.create(config, "negative_sampling", dataset)
+        
+        self._implementation = self.config.check(
+            "negative_sampling.implementation", ["triple", "all", "batch", "auto"],
+        )
+        if self._implementation == "auto":
+            max_nr_of_negs = max(self._sampler.num_samples)
+            if self._sampler.shared:
+                self._implementation = "batch"
+            elif max_nr_of_negs <= 30:
+                self._implementation = "triple"
+            elif max_nr_of_negs > 30:
+                self._implementation = "batch"
+
+        config.log(
+            "Initializing negative sampling training job with "
+            "'{}' scoring function ...".format(self._implementation)
+        )
+        self.type_str = "negative_sampling"
+
+        if self.__class__ == TrainingJobNegativeSampling:
+            for f in Job.job_created_hooks:
+                f(self)
 
     def _prepare(self):
         """Construct dataloader"""
@@ -981,10 +1016,53 @@ class TrainingJobNegativeSampling(TrainingJob):
             # labels[:, 0] = 1
             # labels = labels.view(-1)
 
-            negative_samples = list()
-            for slot in [S, P, O]:
-                negative_samples.append(self._sampler.sample(triples, slot))
-            return {"triples": triples, "negative_samples": negative_samples}
+            if self.config.get("train.multimodal"):
+                triples_per_modality = {}
+                negative_samples_per_modality = {}
+
+                for modality, modality_dict in self.modalities.items():
+                    triples_modality = triples[
+                        (modality_dict["relation_start_idx"] <= triples[:,1])
+                        & (triples[:,1] < modality_dict["relation_end_idx"])
+                        ,:
+                    ]
+                    triples_per_modality[modality] = triples_modality
+                    negative_samples = list()
+
+                    for slot in [S, P, O]:
+                        sample = modality_dict["_sampler"].sample(
+                            triples_modality, slot
+                        )
+
+                        # TODO: deal with DefaultBatchNegativeSample
+                        # S is always structural, while P and O depend on the
+                        # modality
+                        if slot == S:
+                            sample._unique_samples += self.modalities["struct"][
+                                "entity_start_idx"
+                            ]
+                        elif slot == P:
+                            sample._unique_samples += modality_dict[
+                                "relation_start_idx"
+                            ]
+                        elif slot == O:
+                            sample._unique_samples += modality_dict[
+                                "entity_start_idx"
+                            ]
+                        negative_samples.append(sample)
+                    
+                    negative_samples_per_modality[modality] = negative_samples
+                
+                return {
+                    "triples": triples_per_modality,
+                    "negative_samples": negative_samples_per_modality,
+                    "triples_all": triples
+                }
+            else:
+                negative_samples = list()
+                for slot in [S, P, O]:
+                    negative_samples.append(self._sampler.sample(triples, slot))
+                return {"triples": triples, "negative_samples": negative_samples}
 
         return collate
 
@@ -994,15 +1072,36 @@ class TrainingJobNegativeSampling(TrainingJob):
         # move triples and negatives to GPU. With some implementaiton effort, this may
         # be avoided.
         result.prepare_time -= time.time()
-        batch["triples"] = batch["triples"].to(self.device)
-        for ns in batch["negative_samples"]:
-            ns.positive_triples = batch["triples"]
-        batch["negative_samples"] = [
-            ns.to(self.device) for ns in batch["negative_samples"]
-        ]
+        if self.config.get("train.multimodal"):
+            triples_per_modality = batch["triples"]
+            negative_samples_per_modality = batch["negative_samples"]
 
-        batch["labels"] = [None] * 3  # reuse label tensors b/w subbatches
-        result.size = len(batch["triples"])
+            size = 0
+            for modality in self.modalities:
+                triples_per_modality[modality] = (
+                    triples_per_modality[modality].to(self.device)
+                )
+                for ns in negative_samples_per_modality[modality]:
+                    ns.positive_triples = triples_per_modality[modality]
+                negative_samples_per_modality[modality] = [
+                    ns.to(self.device) for ns in negative_samples_per_modality[
+                        modality
+                    ]
+                ]
+                size += len(triples_per_modality[modality])
+
+            batch["labels"] = [None] * 3  # reuse label tensors b/w subbatches
+            result.size = size
+        else:
+            batch["triples"] = batch["triples"].to(self.device)
+            for ns in batch["negative_samples"]:
+                ns.positive_triples = batch["triples"]
+            batch["negative_samples"] = [
+                ns.to(self.device) for ns in batch["negative_samples"]
+            ]
+
+            batch["labels"] = [None] * 3  # reuse label tensors b/w subbatches
+            result.size = len(batch["triples"])
         result.prepare_time += time.time()
 
     def _process_subbatch(
@@ -1012,80 +1111,72 @@ class TrainingJobNegativeSampling(TrainingJob):
         subbatch_slice,
         result: TrainingJob._ProcessBatchResult,
     ):
-        # prepare
-        result.prepare_time -= time.time()
-        triples = batch["triples"][subbatch_slice]
-        batch_negative_samples = batch["negative_samples"]
-        batch_size = result.size
-        subbatch_size = len(triples)
-        result.prepare_time += time.time()
-        labels = batch["labels"]  # reuse b/w subbatches
+        if self.config.get("train.multimodal"):
+            # prepare
+            result.prepare_time -= time.time()
+            # mulimodal guarantees no subbatches
+            batch_size = result.size
+            #subbatch_size = len(triples)
+            result.prepare_time += time.time()
+            labels = batch["labels"]  # reuse b/w subbatches
 
-        # process the subbatch for each slot separately
-        for slot in [S, P, O]:
-            num_samples = self._sampler.num_samples[slot]
-            if num_samples <= 0:
-                continue
+            # process the subbatch for each slot separately
+            for slot in [S, P, O]:
+                # num_samples is independent of modality, so use struct
+                num_samples = self.modalities["struct"]["_sampler"].num_samples[slot]
+                if num_samples <= 0:
+                    continue
 
-            # construct gold labels: first column corresponds to positives,
-            # remaining columns to negatives
-            if labels[slot] is None or labels[slot].shape != (
-                subbatch_size,
-                1 + num_samples,
-            ):
-                result.prepare_time -= time.time()
-                labels[slot] = torch.zeros(
-                    (subbatch_size, 1 + num_samples), device=self.device
-                )
-                labels[slot][:, 0] = 1
-                result.prepare_time += time.time()
-            
-            if self.config.get("train.multimodal"):
-                if slot == P:
-                    raise ValueError("Cannot corrupt P for multimodal")
+                # construct gold labels: first column corresponds to positives,
+                # remaining columns to negatives
+                if labels[slot] is None or labels[slot].shape != (
+                    batch_size,
+                    1 + num_samples,
+                ):
+                    result.prepare_time -= time.time()
+                    labels[slot] = torch.zeros(
+                        (batch_size, 1 + num_samples), device=self.device
+                    )
+                    labels[slot][:, 0] = 1
+                    result.prepare_time += time.time()
 
                 for modality, modality_dict in self.modalities.items():
-                    # mkbe scores modalities only in the O direction
-                    if slot == S and modality != "struct":
-                        continue
-
                     result.prepare_time -= time.time()
-                    triples_modality_idx = (
-                        (modality_dict["relation_start_idx"] <= triples[:,1])
-                        & (triples[:,1] < modality_dict["relation_end_idx"])
-                    )
-                    subbatch_size_modality = triples_modality_idx.sum().item()
+                    triples = batch["triples"][modality]
+                    negative_samples = batch["negative_samples"][modality]
+                    batch_size_modality = len(triples)
                     result.prepare_time += time.time()
-                    if subbatch_size_modality < 1:
+
+                    # it might happen that not each modality is part of a batch
+                    # in that case skip that modality
+                    if batch_size_modality < 1:
                         continue
 
                     # compute the scores
                     result.forward_time -= time.time()
-                    scores = torch.empty((subbatch_size_modality, num_samples + 1), device=self.device)
+                    scores = torch.empty(
+                        (batch_size_modality, num_samples + 1), device=self.device
+                    )
                     scores[:, 0] = self.model.score_spo(
-                        triples[triples_modality_idx, S],
-                        triples[triples_modality_idx, P],
-                        triples[triples_modality_idx, O],
-                        direction=SLOT_STR[slot],
-                        modality=modality
+                        triples[:, S], triples[:, P], triples[:, O],
+                        direction=SLOT_STR[slot],modality=modality
                     )
                     result.forward_time += time.time()
-                    #TODO: check that nonzero same as subbatch slice => remove triples_modality_idx
-                    scores[:, 1:] = batch_negative_samples[slot].score(
-                        # have to specify dimension, for the case that there is only a single multimodal triple
-                        # in that case squeeze without dimension would return for [[0]] 0, instead of [0]
-                        # which would lead to problems down the line, because the indices wouldn't index correctly
-                        self.model, indexes=torch.nonzero(triples_modality_idx).squeeze(dim=1),#subbatch_slice,
-                        triples_modality_idx=triples_modality_idx, modality=modality
+                    scores[:, 1:] = negative_samples[slot].score(
+                        # set indexes to None, because multimodal does not use subbatches
+                        self.model, indexes=None, modality=modality
                     )
-                    result.forward_time += batch_negative_samples[slot].forward_time
-                    result.prepare_time += batch_negative_samples[slot].prepare_time
+                    result.forward_time += negative_samples[slot].forward_time
+                    result.prepare_time += negative_samples[slot].prepare_time
 
                     # compute loss for slot in subbatch (concluding the forward pass)
                     result.forward_time -= time.time()
                     loss_value_torch = (
                         modality_dict["weight"] * self.loss(
-                            scores, labels[slot][triples_modality_idx,:], num_negatives=num_samples
+                            # it doesn't matter how labels[slot] is indexed, as all the rows
+                            # are the same anyway
+                            scores, labels[slot][torch.arange(batch_size_modality),:],
+                            num_negatives=num_samples
                         ) / batch_size
                     )
                     result.avg_loss += loss_value_torch.item()
@@ -1096,7 +1187,35 @@ class TrainingJobNegativeSampling(TrainingJob):
                     if not self.is_forward_only:
                         loss_value_torch.backward()
                     result.backward_time += time.time()
-            else:
+        else:
+            # prepare
+            result.prepare_time -= time.time()
+            triples = batch["triples"][subbatch_slice]
+            batch_negative_samples = batch["negative_samples"]
+            batch_size = result.size
+            subbatch_size = len(triples)
+            result.prepare_time += time.time()
+            labels = batch["labels"]  # reuse b/w subbatches
+
+            # process the subbatch for each slot separately
+            for slot in [S, P, O]:
+                num_samples = self._sampler.num_samples[slot]
+                if num_samples <= 0:
+                    continue
+
+                # construct gold labels: first column corresponds to positives,
+                # remaining columns to negatives
+                if labels[slot] is None or labels[slot].shape != (
+                    subbatch_size,
+                    1 + num_samples,
+                ):
+                    result.prepare_time -= time.time()
+                    labels[slot] = torch.zeros(
+                        (subbatch_size, 1 + num_samples), device=self.device
+                    )
+                    labels[slot][:, 0] = 1
+                    result.prepare_time += time.time()
+
                 # compute the scores
                 result.forward_time -= time.time()
                 scores = torch.empty((subbatch_size, num_samples + 1), device=self.device)

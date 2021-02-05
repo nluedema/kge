@@ -16,7 +16,7 @@ S, P, O = SLOTS
 class KgeSampler(Configurable):
     """Negative sampler. """
 
-    def __init__(self, config: Config, configuration_key: str, dataset: Dataset):
+    def __init__(self, config: Config, configuration_key: str, dataset: Dataset, **kwargs):
         super().__init__(config, configuration_key)
 
         # load config
@@ -38,9 +38,18 @@ class KgeSampler(Configurable):
             slot_str = SLOT_STR[slot]
             self.num_samples[slot] = self.get_option(f"num_samples.{slot_str}")
             self.filter_positives[slot] = self.get_option(f"filtering.{slot_str}")
-            self.vocabulary_size[slot] = (
-                dataset.num_relations() if slot == P else dataset.num_entities()
-            )
+
+            if self.config.get("train.multimodal"):
+                if slot == S:
+                    self.vocabulary_size[slot] = kwargs["num_entities_s"]
+                elif slot == P:
+                    self.vocabulary_size[slot] = kwargs["num_relations"]
+                elif slot == O:
+                    self.vocabulary_size[slot] = kwargs["num_entities_o"]
+            else:
+                self.vocabulary_size[slot] = (
+                    dataset.num_relations() if slot == P else dataset.num_entities()
+                )
             # create indices for filtering here already if needed and not existing
             # otherwise every worker would create every index again and again
             if self.filter_positives[slot]:
@@ -65,12 +74,12 @@ class KgeSampler(Configurable):
 
     @staticmethod
     def create(
-        config: Config, configuration_key: str, dataset: Dataset
+        config: Config, configuration_key: str, dataset: Dataset, **kwargs
     ) -> "KgeSampler":
         """Factory method for sampler creation."""
         sampling_type = config.get(configuration_key + ".sampling_type")
         if sampling_type == "uniform":
-            return KgeUniformSampler(config, configuration_key, dataset)
+            return KgeUniformSampler(config, configuration_key, dataset, **kwargs)
         elif sampling_type == "frequency":
             return KgeFrequencySampler(config, configuration_key, dataset)
         else:
@@ -282,10 +291,6 @@ class BatchNegativeSample(Configurable):
         triples = (
             self.positive_triples[indexes, :] if indexes is not None else self.positive_triples
         )
-        #TODO: check that indexes is the same with torch.nonzero and subbatch_slice
-        #if self.config.get("train.multimodal"):
-        #    negative_samples = negative_samples[kwargs["triples_modality_idx"],:]
-        #    triples = triples[kwargs["triples_modality_idx"],:]
         self.prepare_time += time.time()
 
         # go ahead and score
@@ -305,8 +310,7 @@ class BatchNegativeSample(Configurable):
                 triples_to_score[:, S],
                 triples_to_score[:, P],
                 triples_to_score[:, O],
-                direction=SLOT_STR[slot],
-                **kwargs
+                direction=SLOT_STR[slot], **kwargs
             ).view(chunk_size, -1)
             self.forward_time += time.time()
         elif self._implementation in ["batch", "all"]:
@@ -351,9 +355,9 @@ class BatchNegativeSample(Configurable):
     @staticmethod
     def _score_unique_targets(model, slot, triples, unique_targets, **kwargs) -> torch.Tensor:
         if slot == S:
-            all_scores = model.score_po(triples[:, P], triples[:, O], unique_targets)
+            all_scores = model.score_po(triples[:, P], triples[:, O], unique_targets, **kwargs)
         elif slot == P:
-            all_scores = model.score_so(triples[:, S], triples[:, O], unique_targets)
+            all_scores = model.score_so(triples[:, S], triples[:, O], unique_targets, **kwargs)
         elif slot == O:
             all_scores = model.score_sp(triples[:, S], triples[:, P], unique_targets, **kwargs)
         else:
@@ -430,9 +434,9 @@ class NaiveSharedNegativeSample(BatchNegativeSample):
 
         return negative_samples1.unsqueeze(0).expand((chunk_size, -1))
 
-    def score(self, model, indexes=None) -> torch.Tensor:
+    def score(self, model, indexes=None, **kwargs) -> torch.Tensor:
         if self._implementation != "batch":
-            return super().score(model, indexes)
+            return super().score(model, indexes, **kwargs)
 
         # for batch, we have a faster implementation that avoids creating the full
         # sample tensor
@@ -450,7 +454,7 @@ class NaiveSharedNegativeSample(BatchNegativeSample):
 
         # compute scores for all unique targets for slot
         self.forward_time -= time.time()
-        scores = self._score_unique_targets(model, slot, triples, unique_targets)
+        scores = self._score_unique_targets(model, slot, triples, unique_targets, **kwargs)
 
         # repeat scores as needed for WR sampling
         if num_unique != self.num_samples:
@@ -539,9 +543,9 @@ class DefaultSharedNegativeSample(BatchNegativeSample):
 
         return negative_samples
 
-    def score(self, model, indexes=None) -> torch.Tensor:
+    def score(self, model, indexes=None, **kwargs) -> torch.Tensor:
         if self._implementation != "batch":
-            return super().score(model, indexes)
+            return super().score(model, indexes, **kwargs)
 
         # for batch, we have a faster implementation that avoids creating the full
         # sample tensor
@@ -559,7 +563,7 @@ class DefaultSharedNegativeSample(BatchNegativeSample):
 
         # compute scores for all unique targets for slot
         self.forward_time -= time.time()
-        all_scores = self._score_unique_targets(model, slot, triples, unique_targets)
+        all_scores = self._score_unique_targets(model, slot, triples, unique_targets, **kwargs)
 
         # create the complete scoring matrix
         device = self.positive_triples.device
@@ -591,74 +595,13 @@ class DefaultSharedNegativeSample(BatchNegativeSample):
 
 
 class KgeUniformSampler(KgeSampler):
-    def __init__(self, config: Config, configuration_key: str, dataset: Dataset):
-        super().__init__(config, configuration_key, dataset)
-        if config.get("train.multimodal"):
-            import yaml
-            with open(f"{dataset.folder}/dataset.yaml", "r") as f:
-                self.dataset_yaml = yaml.load(f, Loader=yaml.SafeLoader)["dataset"]
-
-            self.modalities = {}
-            prefix = "files.train.modality"
-            for modality in self.config.get("train.multimodal_args.modalities"):
-                entity_start_idx = self.dataset_yaml[
-                    f"{prefix}.{modality}.entity.start_idx"
-                ]
-                entity_end_idx = self.dataset_yaml[
-                    f"{prefix}.{modality}.entity.end_idx"
-                ]
-                relation_start_idx = self.dataset_yaml[
-                    f"{prefix}.{modality}.relation.start_idx"
-                ]
-                relation_end_idx = self.dataset_yaml[
-                    f"{prefix}.{modality}.relation.end_idx"
-                ]
-                self.modalities[modality] = {
-                    "entity_start_idx":entity_start_idx,
-                    "entity_end_idx":entity_end_idx,
-                    "relation_start_idx":relation_start_idx,
-                    "relation_end_idx":relation_end_idx
-                }
+    def __init__(self, config: Config, configuration_key: str, dataset: Dataset, **kwargs):
+        super().__init__(config, configuration_key, dataset, **kwargs)
 
     def _sample(self, positive_triples: torch.Tensor, slot: int, num_samples: int):
-        if self.config.get("train.multimodal"):
-            if slot == S:
-                start_idx = self.modalities["struct"]["entity_start_idx"]
-                end_idx = self.modalities["struct"]["entity_end_idx"]
-                return torch.randint(
-                    low=start_idx,high=end_idx,
-                    size=(positive_triples.size(0),num_samples)
-                )
-            elif slot == O:
-                negatives = torch.empty(
-                    (positive_triples.size(0),num_samples),dtype=torch.long
-                )
-                for modality, modality_dict in self.modalities.items():
-                    positive_triples_modality_idx = ( 
-                        (modality_dict["relation_start_idx"] <= positive_triples[:,1])
-                        & (positive_triples[:,1] < modality_dict["relation_end_idx"])
-                    )
-
-                    start_idx = modality_dict["entity_start_idx"]
-                    end_idx = modality_dict["entity_end_idx"]
-
-                    negatives[positive_triples_modality_idx,:] = torch.randint(
-                        low=start_idx,high=end_idx,
-                        size=(positive_triples_modality_idx.sum().item(),num_samples)
-                    )
-                return negatives
-            elif slot == P:
-                if num_samples > 0:
-                    raise ValueError (
-                        "Multimodal does not work with corrupted predicates"
-                    )
-                return torch.randint(
-                    self.vocabulary_size[slot], (positive_triples.size(0), num_samples)
-                )
-        else:
-            return torch.randint(
-                self.vocabulary_size[slot], (positive_triples.size(0), num_samples)
-            )
+        return torch.randint(
+            self.vocabulary_size[slot], (positive_triples.size(0), num_samples)
+        )
 
     def _sample_shared(
         self, positive_triples: torch.Tensor, slot: int, num_samples: int

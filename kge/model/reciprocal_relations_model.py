@@ -57,7 +57,15 @@ class ReciprocalRelationsModel(KgeModel):
         if direction == "o":
             return super().score_spo(s, p, o, "o", **kwargs)
         elif direction == "s":
-            return super().score_spo(o, p + self.dataset.num_relations(), s, "o", **kwargs)
+            #return super().score_spo(o, p + self.dataset.num_relations(), s, "o", **kwargs)
+            # I need to handle this myself
+            # otherwise the multimodal object indexes are used on the s_embedder without
+            # giving **kwargs along in kge_model.score_spo
+            # also o_embedder would be called with **kwargs but using struct indexes
+            s = self.get_s_embedder().embed(s)
+            p = self.get_p_embedder().embed(p + self.dataset.num_relations())
+            o = self.get_o_embedder().embed(o, **kwargs)
+            return self._scorer.score_emb(o, p, s, combine="spo").view(-1)
         else:
             raise Exception(
                 "The reciprocal relations model cannot compute "
