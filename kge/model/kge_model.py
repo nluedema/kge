@@ -610,7 +610,12 @@ class KgeModel(KgeBase):
         # penalized twice. This is intended (and necessary, e.g., if the penalty is
         # weighted).
         if "batch" in kwargs and "triples" in kwargs["batch"]:
-            triples = kwargs["batch"]["triples"].to(self.config.get("job.device"))
+            if self.config.get("train.multimodal"):
+                triples = kwargs["batch"]["triples_all"].to(
+                    self.config.get("job.device")
+                )
+            else:
+                triples = kwargs["batch"]["triples"].to(self.config.get("job.device"))
             penalty_result = super().penalty(**kwargs) + self.get_p_embedder().penalty(
                 indexes=triples[:, P], **kwargs
             )
@@ -618,9 +623,17 @@ class KgeModel(KgeBase):
                 weighted = self.get_s_embedder().get_option("regularize_args.weighted")
                 entity_indexes = None
                 if weighted:
-                    entity_indexes = torch.cat(
-                        (triples[:, S].view(-1, 1), triples[:, O].view(-1, 1)), dim=1
-                    )
+                    if self.config.get("train.multimodal"):
+                        # extract all structural entities that are part of the batch
+                        # subjects are always structural
+                        # objects are only structural when modality is "struct"
+                        entity_indexes = torch.cat(
+                            (triples[:,S], kwargs["batch"]["triples"]["struct"][:,O])
+                        )
+                    else:
+                        entity_indexes = torch.cat(
+                            (triples[:, S].view(-1, 1), triples[:, O].view(-1, 1)), dim=1
+                        )
                 entity_penalty_result = self.get_s_embedder().penalty(
                     indexes=entity_indexes, **kwargs,
                 )
@@ -728,7 +741,7 @@ class KgeModel(KgeBase):
 
         return self._scorer.score_emb(s, p, o, combine="_po")
 
-    def score_so(self, s: Tensor, o: Tensor, p: Tensor = None) -> Tensor:
+    def score_so(self, s: Tensor, o: Tensor, p: Tensor = None, **kwargs) -> Tensor:
         r"""Compute scores for triples formed from a set of so-pairs and all (or a subset of the) relations.
 
         `s` and `o` are vectors of common size :math:`n`, holding the indexes of the
@@ -742,7 +755,7 @@ class KgeModel(KgeBase):
 
         """
         s = self.get_s_embedder().embed(s)
-        o = self.get_o_embedder().embed(o)
+        o = self.get_o_embedder().embed(o, **kwargs)
         if p is None:
             p = self.get_p_embedder().embed_all()
         else:
