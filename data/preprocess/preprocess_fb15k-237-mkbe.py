@@ -24,40 +24,6 @@ from os import path
 from dataclasses import dataclass
 from collections import defaultdict
 
-import gensim
-import gensim.downloader as api
-import nltk
-import string
-
-#def preprocess_numeric(file, args):
-#    triples_by_predicate = defaultdict(list)
-#    with open(path.join(args.folder, file), "r") as f:
-#        data = list(
-#            map(lambda s: s.strip().split("\t"), f.readlines())
-#        )
-#        S, P, O = (0,1,2)
-#
-#        for t in data:
-#            triples_by_predicate[t[P]].append([t[S],t[O]])
-#    
-#    for predicate, triples in triples_by_predicate.items():
-#        with open(path.join(args.folder,f"{predicate}_preprocessed.txt"), "w") as f:
-#            for t in triples:
-#                f.write(f"{t[0]}\t{t[1]}\n")
-#    
-#    return triples_by_predicate.keys()
-
-# TODO: Remove Fb15K triples not in fb15k-237???
-def preprocess_text(file, modality_name, args):
-    with open(path.join(args.folder, file), "r") as f:
-        data = list(
-            map(lambda s: s.strip().split("\t"), f.readlines())
-        )
-    
-    with open(path.join(args.folder, f"{modality_name}_preprocessed.txt"), "w") as f:
-        for t in data:
-            f.write(f"{t[0]}\t{modality_name}\t{t[2]}\n")
-
 if __name__ == "__main__":
     args = util.default_parser().parse_args()
     field_map = {
@@ -85,30 +51,28 @@ if __name__ == "__main__":
     # add multimodal information
     raw_multimodal_splits = []
     if args.modality in ["all","text"]:
-        text_modality_name = "hasDescription"
-        preprocess_text("entityWords.txt", text_modality_name , args)
         text_raw = util.RawMultimodalSplit(
-            file=f"{text_modality_name}_preprocessed.txt",
+            file="/work-ceph/nluedema/kge/experiments/fb15k-237/preprocessed_files/text_data.txt",
             field_map = {
                 "S": 0,
                 "P": 1,
                 "O": 2,
             },
-            modality_name=text_modality_name
+            modality_name="text"
         )
         raw_multimodal_splits.append(text_raw) 
 
-    #if args.modality in ["all","numeric"]:
-    #    numeric_raw = util.RawMultimodalSplit(
-    #        file="numerical_data_merged.txt",
-    #        field_map = {
-    #            "S": 0,
-    #            "P": 1,
-    #            "O": 2
-    #        },
-    #        modality_name="hasDate"
-    #    )
-    #    raw_multimodal_splits.append(numeric_raw) 
+    if args.modality in ["all","numeric"]:
+        numeric_raw = util.RawMultimodalSplit(
+            file="/work-ceph/nluedema/kge/experiments/fb15k-237/preprocessed_files/numeric_data.txt",
+            field_map = {
+                "S": 0,
+                "P": 1,
+                "O": 2
+            },
+            modality_name="numeric"
+        )
+        raw_multimodal_splits.append(numeric_raw) 
 
     raw_dataset = util.add_multimodal_to_raw_dataset(
         raw_multimodal_splits,raw_dataset, folder=args.folder

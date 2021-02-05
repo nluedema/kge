@@ -24,53 +24,6 @@ from os import path
 from dataclasses import dataclass
 from collections import defaultdict
 
-import gensim
-import gensim.downloader as api
-import nltk
-import string
-
-#def preprocess_numeric(file, args):
-#    triples_by_predicate = defaultdict(list)
-#    with open(path.join(args.folder, file), "r") as f:
-#        data = list(
-#            map(lambda s: s.strip().split("\t"), f.readlines())
-#        )
-#        S, P, O = (0,1,2)
-#
-#        for t in data:
-#            triples_by_predicate[t[P]].append([t[S],t[O]])
-#    
-#    for predicate, triples in triples_by_predicate.items():
-#        with open(path.join(args.folder,f"{predicate}_preprocessed.txt"), "w") as f:
-#            for t in triples:
-#                f.write(f"{t[0]}\t{t[1]}\n")
-#    
-#    return triples_by_predicate.keys()
-
-def preprocess_text(file, modality_name, args):
-    with open(path.join(args.folder, file), "r") as f:
-        data = list(
-            map(lambda s: s.strip().split("\t"), f.readlines())
-        )
-    
-    glove = api.load("glove-wiki-gigaword-300")
-    punctuation = list(string.punctuation)
-    stopwords = set(nltk.corpus.stopwords.words('english'))
-
-    with open(path.join(args.folder, f"{modality_name}_preprocessed.txt"), "w") as f:
-        for t in data:
-            sents = nltk.tokenize.sent_tokenize(t[1])
-            final = []
-            for sent in sents:
-                sent = sent.lower()
-                sent = nltk.tokenize.word_tokenize(sent)
-                for w in sent:
-                    if w not in stopwords and w not in punctuation and w in glove:
-                        final.append(w)
-            if len(final) >= 3:
-                final_str = " ".join(final)
-                f.write(f"{t[0]}\t{modality_name}\t{final_str}\n")
-
 if __name__ == "__main__":
     args = util.default_parser().parse_args()
     field_map = {
@@ -98,28 +51,26 @@ if __name__ == "__main__":
     # add multimodal information
     raw_multimodal_splits = []
     if args.modality in ["all","text"]:
-        text_modality_name = "hasDescription"
-        preprocess_text("text_description.txt", text_modality_name , args)
         text_raw = util.RawMultimodalSplit(
-            file=f"{text_modality_name}_preprocessed.txt",
+            file="/work-ceph/nluedema/kge/experiments/yago3-10/preprocessed_files/text_data.txt",
             field_map = {
                 "S": 0,
                 "P": 1,
                 "O": 2,
             },
-            modality_name=text_modality_name
+            modality_name="text"
         )
         raw_multimodal_splits.append(text_raw) 
 
     if args.modality in ["all","numeric"]:
         numeric_raw = util.RawMultimodalSplit(
-            file="numerical_data_merged.txt",
+            file="/work-ceph/nluedema/kge/experiments/yago3-10/preprocessed_files/numeric_data.txt",
             field_map = {
                 "S": 0,
                 "P": 1,
                 "O": 2
             },
-            modality_name="hasDate"
+            modality_name="numeric"
         )
         raw_multimodal_splits.append(numeric_raw) 
 
