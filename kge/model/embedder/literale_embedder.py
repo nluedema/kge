@@ -56,6 +56,21 @@ class LiteralEEmbedder(KgeEmbedder):
         if "struct" not in self.get_option("modalities"):
             raise ValueError("literale_embedder needs struct as modality")
         
+        # set relation embedder dim
+        # fixes the problem that for the search, relation and entity embeder dim
+        # has to be set with a single config
+        # CAREFULL: THIS ASSUMES THAT THE ENITY EMBEDER IS CREATED FIRST
+        rel_emb_conf_key = configuration_key.replace(
+            "entity_embedder", "relation_embedder"
+        )
+        if configuration_key == rel_emb_conf_key:
+            raise ValueError(
+                "Cannot set the relation embedding size"
+            )
+        config.set(
+            f"{rel_emb_conf_key}.dim", self.dim
+        )
+
         # create embedder for each modality
         self.embedder = torch.nn.ModuleDict()
         for modality in self.get_option("modalities"):
