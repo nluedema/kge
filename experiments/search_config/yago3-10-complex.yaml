@@ -1,0 +1,138 @@
+# yago3-10-complex-negative_sampling-kl
+job.type: search
+search.type: ax
+dataset.name: yago3-10 
+
+# training settings (fixed)
+train:
+  max_epochs: 300
+  auto_correct: True
+
+negative_sampling.implementation: batch
+negative_sampling.shared: True
+
+# validation/evaluation settings (fixed)
+valid:
+  every: 5
+  metric: mean_reciprocal_rank_filtered_with_test
+  filter_with_test: True
+  early_stopping:
+    patience: 5
+    min_threshold.epochs: 40
+    min_threshold.metric_value: 0.05
+
+eval:
+  batch_size: 256
+  metrics_per.relation_type: True
+
+entity_ranking:
+  chunk_size: 4096      # still need to find appropriate value
+
+import: [complex]
+
+# setup model
+model: complex
+
+# setup entity embedder
+
+# ax settings: hyperparameter serach space
+ax_search:
+  num_trials: 20
+  num_sobol_trials: 20 
+  parameters:
+    # training hyperparameters
+    - name: train.batch_size
+      type: choice 
+      values: [2048, 4096]
+      is_ordered: True
+    - name: train.type
+      type: fixed
+      value: negative_sampling
+    - name: train.optimizer
+      type: choice
+      values: [Adam, Adagrad]
+    - name: train.loss
+      type: fixed
+      value: kl
+    - name: train.optimizer_args.lr     
+      type: range
+      bounds: [0.0003, 1.0]
+      log_scale: True
+    - name: train.lr_scheduler
+      type: fixed
+      value: ReduceLROnPlateau
+    - name: train.lr_scheduler_args.mode
+      type: fixed
+      value: max  
+    - name: train.lr_scheduler_args.factor
+      type: fixed
+      value: 0.95  
+    - name: train.lr_scheduler_args.threshold
+      type: fixed
+      value: 0.0001  
+    - name: train.lr_scheduler_args.patience
+      type: choice
+      values: [0, 2, 4]  
+
+    # embedding dimension
+    - name: lookup_embedder.dim
+      type: choice
+      values: [128, 256]
+      is_ordered: True
+
+    # lookup_embedder
+    # embedding initialization
+    - name: lookup_embedder.initialize
+      type: fixed
+      value: xavier_normal_  
+    - name: lookup_embedder.initialize_args.xavier_normal_.gain
+      type: fixed
+      value: 1.0
+
+    # embedding regularization
+    - name: lookup_embedder.regularize
+      type: choice
+      values: ['', 'l3']
+      is_ordered: True
+    - name: lookup_embedder.regularize_args.weighted
+      type: fixed
+      value: False
+    - name: complex.entity_embedder.regularize_weight
+      type: range
+      bounds: [1.0e-20, 1.0e-01]
+      log_scale: True
+    - name: complex.relation_embedder.regularize_weight
+      type: range
+      bounds: [1.0e-20, 1.0e-01]
+      log_scale: True
+
+    # embedding dropout
+    - name: complex.entity_embedder.dropout
+      type: range
+      bounds: [-0.5, 0.5]
+    - name: complex.relation_embedder.dropout
+      type: range
+      bounds: [-0.5, 0.5]
+    
+    # text_cnn_embedder
+    # cnn options
+
+    # cnn initialization
+
+    # cnn regularization
+
+    # cnn dropout
+
+    # training-type specific hyperparameters
+    - name: negative_sampling.num_negatives_s #train_type: negative_sampling
+      type: range                             #train_type: negative_sampling
+      bounds: [1, 500]                        #train_type: negative_sampling
+      log_scale: True                         #train_type: negative_sampling
+    - name: negative_sampling.num_negatives_o #train_type: negative_sampling
+      type: range                             #train_type: negative_sampling
+      bounds: [1, 500]                        #train_type: negative_sampling
+      log_scale: True                         #train_type: negative_sampling
+    
+    # embedder-specific entries
+
+    # model-specific entries

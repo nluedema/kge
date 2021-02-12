@@ -4,7 +4,7 @@ text_cnn_embedder:
   filename: ''                # specifies where the text descriptions are stored
   # gensim model name to load
   # https://github.com/RaRe-Technologies/gensim-data#models
-  gensim_model_name: ''
+  gensim_model_name: 'glove-wiki-gigaword-100'
   # specifies if the word embeddings should get updated
   freeze_word_embeddings: False 
   dim_feature_map: 100
@@ -18,4 +18,4 @@ text_cnn_embedder:
   regularize: 'lp'              # '', 'lp'
   regularize_weight: 0.0
   regularize_args:
-    p: 2.0
+    p: 2

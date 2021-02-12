@@ -8,6 +8,6 @@ dkrl_embedder:
     type: lookup_embedder
     +++: +++
   +++: +++                    # allow to add additional modalities to dkrl_embedder
-  dropout: 0.                 # dropout used for text embeddings
+  dropout: 0.                 # dropout used for embeddings 
   regularize_args:
     weighted: False
