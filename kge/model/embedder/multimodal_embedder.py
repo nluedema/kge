@@ -25,6 +25,21 @@ class MultimodalEmbedder(KgeEmbedder):
         # read config
         self.config.check("train.trace_level", ["batch", "epoch"])
 
+        # set relation embedder dim
+        # fixes the problem that for the search, relation and entity embeder dim
+        # has to be set with a single config
+        # CAREFULL: THIS ASSUMES THAT THE ENITY EMBEDER IS CREATED FIRST
+        rel_emb_conf_key = configuration_key.replace(
+            "entity_embedder", "relation_embedder"
+        )
+        if configuration_key == rel_emb_conf_key:
+            raise ValueError(
+                "Cannot set the relation embedding size"
+            )
+        config.set(
+            f"{rel_emb_conf_key}.dim", self.dim
+        )
+
         # load dataset yaml
         with open(f"{self.dataset.folder}/dataset.yaml", "r") as f:
             self.dataset_yaml = yaml.load(f, Loader=yaml.SafeLoader)["dataset"]
