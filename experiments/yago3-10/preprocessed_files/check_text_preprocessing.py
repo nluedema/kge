@@ -38,11 +38,14 @@ def _preprocess_text(
 
 def get_words_lengths(text_data):
     lengths = []
-    words = set()
+    words = {}
     for text in text_data:
         lengths.append(len(text))
         for w in text:
-            words.add(w)
+            if w in words:
+                words[w] += 1
+            else:
+                words[w] = 1
     return words,lengths
 
 entities_path = "/work-ceph/nluedema/kge/data/yago3-10/entity_ids.del"
@@ -91,14 +94,60 @@ len(words)
 # 126366
 len(words_with_oov)
 # 268172
+sum(lengths)
+# 3960218 
+sum(lengths_with_oov)
+# 4155443
 
-oov_words = []
-for word in words_with_oov:
-    if word not in words:
-        oov_words.append(word)
+oov_words = [w for w in words_with_oov if w not in words]
+len(oov_words)
+# 141806
+sum([words_with_oov[w] for w in oov_words])
+# 195225
 
-oov_words[100000:100100]
+# 195225/4155443 = 0.0470
+# 4.70% of the preprocessed words are oov
+
 oov_words[0:100]
+oov_words[-100:]
+data[1005][2]
+data[1006][2]
+
+dashes = [chr(45), chr(8208), chr(8209), chr(8210), chr(8211), chr(8212), chr(8213)]
+oov_words_dashes = [w for w in oov_words if any(dash in w for dash in dashes)]
+len(oov_words_dashes)
+# 17790
+sum([words_with_oov[w] for w in oov_words_dashes])
+# 28168
+oov_words_dashes[0:40]
+
+words_dashes = ([w for w in words if any(dash in w for dash in dashes)])
+len(words_dashes)
+# 6553
+sum([words[w] for w in words_dashes])
+# 61093
+words_dashes[0:40]
+
+import re
+def split_dash(w):
+    return re.split(
+        f"[{chr(45)}{chr(8208)}{chr(8209)}{chr(8210)}{chr(8211)}{chr(8212)}{chr(8213)}]",
+        w
+    )
+
+oov_words_dashes_splits = []
+for w in oov_words_dashes:
+    oov_words_dashes_splits.extend(split_dash(w))
+# get unique values
+oov_words_dashes_splits = list(set(oov_words_dashes_splits))
+len(oov_words_dashes_splits)
+# 15824
+oov_words_dashes_splits[0:40]
+
+oov_words_dashes_splits_model =  [w for w in oov_words_dashes_splits if w in model]
+len(oov_words_dashes_splits_model)
+# 12107
+oov_words_dashes_splits_model[0:40]
 
 lengths = np.array(lengths)
 lengths_with_oov = np.array(lengths_with_oov)
