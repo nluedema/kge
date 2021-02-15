@@ -158,6 +158,11 @@ class TextCNNEmbedder(KgeEmbedder):
             for w in text:
                 if w not in word_map:
                     word_map[w] = len(word_map)
+        
+        # restrict sequence length, if max_sequence length is set
+        max_sequence_length = self.get_option("max_sequence_length")
+        if (max_sequence_length > -1) and (max_sequence_length < max_len):
+            max_len = max_sequence_length
 
         # build text map 
         self.text_map = torch.zeros(

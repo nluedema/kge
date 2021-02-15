@@ -7,7 +7,8 @@ text_cnn_embedder:
   # https://github.com/RaRe-Technologies/gensim-data#models
   gensim_model_name: 'glove-wiki-gigaword-100'
   # specifies if the word embeddings should get updated
-  freeze_word_embeddings: False 
+  freeze_word_embeddings: False
+  max_sequence_length: -1     # if -1, do not restrict sequence length
   dim_feature_map: 100
   kernel_size_conv: 2
   kernel_size_max_pool: 4
