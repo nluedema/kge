@@ -1,6 +1,19 @@
 numeric_feature_embedder:
   class_name: NumericFeatureEmbedder
-  dim: 0                      # unused, will be set depending on number of numeric attributes
+  # unused if num_layers is set to 0 and instead will depend on number of
+  # numeric attributes
+  dim: -1 
   filename: ''                # specifies where the numeric data is stored
-  normalization: 'min-max'    # 'min-max', 'z-score' 
-  dropout: 0.                 # dropout used for numeric features
+  normalization: z-score      # 'min-max', 'z-score' 
+  # number of layers to use, to create embedding from numeric features
+  # if 0, return numeric features as embedding
+  num_layers: 0
+  activation: tanh            # 'tanh', 'relu'
+  dropout: 0.                 # dropout used for numeric features/embeddings
+  initialize: normal_         # xavier, uniform, normal
+  initialize_args:
+    +++: +++
+  regularize: 'lp'            # '', 'lp'
+  regularize_weight: 0.0
+  regularize_args:
+    p: 2
