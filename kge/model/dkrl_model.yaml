@@ -12,4 +12,4 @@ dkrl_model:
   base_scorer:
     type: transe                     # has to match file name of model
     class_name: TransEScorer         # class_name of base scorer
-  modality_weight: 1.                 # used in the scoring function
+  #modality_weight: 1.               # DEPRECATED: specify in train instead

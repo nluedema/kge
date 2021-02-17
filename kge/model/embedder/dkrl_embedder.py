@@ -25,8 +25,8 @@ class DKRLEmbedder(KgeEmbedder):
         self.config.check("train.trace_level", ["batch", "epoch"])
         self.vocab_size = vocab_size
 
-        if len(self.get_option("modalities")) > 2:
-            raise ValueError("dkrl_embedder only works with 2 modalities")
+        if self.get_option("modalities")[0] != "struct":
+            raise ValueError("DKRL assumes that struct is the first modality")
 
         # set relation embedder dim
         # fixes the problem that for the search, relation and entity embeder dim

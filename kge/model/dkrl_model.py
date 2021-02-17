@@ -29,28 +29,38 @@ class DKRLScorer(RelationalScorer):
         except:
             raise Exception(f"Can't find {base_scorer_class_name}")
 
-        self.modality_weight = self.get_option("modality_weight")
-
     def score_emb(self, s_emb, p_emb, o_emb, combine: str):
         s_emb_struct = s_emb[:,:,0]
         o_emb_struct = o_emb[:,:,0]
 
-        s_emb_multimodal = s_emb[:,:,1]
-        o_emb_multimodal = o_emb[:,:,1]
-
-        score_ss = self.base_scorer.score_emb(
+        # calculate structural score
+        score = self.base_scorer.score_emb(
             s_emb_struct, p_emb, o_emb_struct, combine
         )
-        score_mm = self.base_scorer.score_emb(
-            s_emb_multimodal, p_emb, o_emb_multimodal, combine
-        )
-        score_ms = self.base_scorer.score_emb(
-            s_emb_multimodal, p_emb, o_emb_struct, combine
-        )
-        score_sm = self.base_scorer.score_emb(
-            s_emb_struct, p_emb, o_emb_multimodal, combine
-        )
-        score = score_ss + self.modality_weight * (score_mm + score_ms + score_sm)
+
+        # add multimodal scores
+        for i,modality in enumerate(self.get_option("entity_embedder.modalities")):
+            if modality != "struct": 
+                s_emb_multimodal = s_emb[:,:,i]
+                o_emb_multimodal = o_emb[:,:,i]
+
+                # score mm
+                score_multimodal = self.base_scorer.score_emb(
+                    s_emb_multimodal, p_emb, o_emb_multimodal, combine
+                )
+                #score ms
+                score_multimodal += self.base_scorer.score_emb(
+                    s_emb_multimodal, p_emb, o_emb_struct, combine
+                )
+                #score sm
+                score_multimodal += self.base_scorer.score_emb(
+                    s_emb_struct, p_emb, o_emb_multimodal, combine
+                )
+                modality_weight = self.config.get(
+                    f"train.multimodal_args.{modality}.weight"
+                )
+                score += (modality_weight * score_multimodal)
+
         return score
 
 class DKRLModel(KgeModel):
