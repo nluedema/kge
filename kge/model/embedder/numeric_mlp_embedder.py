@@ -103,10 +103,17 @@ class NumericMLPEmbedder(KgeEmbedder):
         elif self.get_option("normalization") == "z-score":
             for rel_idx in rel_to_idx.values():
                 sel = (rel_idx == numeric_data_rel_idx)
-                mean = torch.mean(numeric_data[sel]) 
-                std = torch.std(numeric_data[sel]) 
+                mean = torch.mean(numeric_data[sel])
+
+                # account for the fact that there might only be a single value
+                # in that case torch.std would result in nan
+                if torch.sum(sel) > 1:
+                    std = torch.std(numeric_data[sel]) 
+                else:
+                    std = 0
+                
                 numeric_data[sel] = (
-                    (numeric_data[sel] - mean) / std
+                    (numeric_data[sel] - mean) / (std + 1e-8)
                 )
         else:
             raise ValueError("Unkown normalization option")
@@ -145,11 +152,11 @@ class NumericMLPEmbedder(KgeEmbedder):
         super().prepare_job(job, **kwargs)
 
     def _embed(self, indexes: Tensor) -> Tensor:
-            indexes = indexes - self.start_idx
+        indexes = indexes - self.start_idx
             
-            numeric_data = self.numeric_data[indexes]
-            numeric_data = numeric_data.reshape(-1,1)
-            return self.numeric_mlp(numeric_data)
+        numeric_data = self.numeric_data[indexes]
+        numeric_data = numeric_data.reshape(-1,1)
+        return self.numeric_mlp(numeric_data)
     
     def embed(self, indexes: Tensor) -> Tensor:
         return self._postprocess(self._embed(indexes.long()))
