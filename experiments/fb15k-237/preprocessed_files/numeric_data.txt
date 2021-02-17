@@ -2105,8 +2105,6 @@
 /m/04s5_s	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1959.0
 /m/07z542	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1948.5
 /m/0f4l5	<http://rdf.freebase.com/ns/chemistry.chemical_compound.average_molar_mass>	286.45
-/m/019y_2	<http://rdf.freebase.com/ns/visual_art.art_period_movement.began_approximately>	1920.0
-/m/019y_2	<http://rdf.freebase.com/ns/visual_art.art_period_movement.ended_approximately>	1940.0
 /m/09g7vfw	<http://rdf.freebase.com/ns/film.film.initial_release_date>	2012.41666667
 /m/05bnq3j	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1977.41666667
 /m/07rzf	<http://rdf.freebase.com/ns/people.person.height_meters>	1.75
@@ -2744,7 +2742,6 @@
 /m/0dhdp	<http://rdf.freebase.com/ns/location.geocode.latitude>	52.633333
 /m/0dhdp	<http://rdf.freebase.com/ns/location.location.gns_ufi>	6077607.0
 /m/0dhdp	<http://rdf.freebase.com/ns/location.location.area>	73.32
-/m/03j_q	<http://rdf.freebase.com/ns/computer.programming_language.introduced>	1990.0
 /m/011yl_	<http://rdf.freebase.com/ns/film.film.initial_release_date>	1996.08333333
 /m/02_1ky	<http://rdf.freebase.com/ns/tv.tv_program.air_date_of_final_episode>	1995.91666667
 /m/02_1ky	<http://rdf.freebase.com/ns/tv.tv_program.episode_running_time>	30.0
@@ -3610,7 +3607,6 @@
 /m/04x1_w	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1984.25
 /m/055yr	<http://rdf.freebase.com/ns/computer.software.latest_release_date>	2012.16666667
 /m/055yr	<http://rdf.freebase.com/ns/computer.operating_system.release_date>	2001.25
-/m/055yr	<http://rdf.freebase.com/ns/computer.software.first_released>	2001.25
 /m/0g3zrd	<http://rdf.freebase.com/ns/film.film.initial_release_date>	2009.5
 /m/0wsr	<http://rdf.freebase.com/ns/sports.sports_team.founded>	1965.0
 /m/0cbl95	<http://rdf.freebase.com/ns/film.film.initial_release_date>	1930.33333333
@@ -8581,8 +8577,6 @@
 /m/087v17	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1904.16666667
 /m/087v17	<http://rdf.freebase.com/ns/people.deceased_person.date_of_death>	1988.58333333
 /m/01wwnh2	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1973.75
-/m/01vrkm	<http://rdf.freebase.com/ns/visual_art.art_period_movement.began_approximately>	1420.0
-/m/01vrkm	<http://rdf.freebase.com/ns/visual_art.art_period_movement.ended_approximately>	1600.0
 /m/01hq1	<http://rdf.freebase.com/ns/film.film.initial_release_date>	1992.5
 /m/08lg0g	<http://rdf.freebase.com/ns/sports.sports_team.founded>	1917.33333333
 /m/030h95	<http://rdf.freebase.com/ns/people.person.height_meters>	1.63
@@ -8735,7 +8729,6 @@
 /m/05sq0m	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1957.08333333
 /m/0dlglj	<http://rdf.freebase.com/ns/people.person.height_meters>	1.727
 /m/0dlglj	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1970.5
-/m/0cnjm0	<http://rdf.freebase.com/ns/cvg.computer_videogame.release_date>	2006.91666667
 /m/014wxc	<http://rdf.freebase.com/ns/location.geocode.longitude>	-157.0
 /m/014wxc	<http://rdf.freebase.com/ns/location.geocode.latitude>	21.0
 /m/06ryl	<http://rdf.freebase.com/ns/location.geocode.longitude>	-62.733333
@@ -8971,7 +8964,6 @@
 /m/03rt9	<http://rdf.freebase.com/ns/location.location.area>	70273.0
 /m/085j0	<http://rdf.freebase.com/ns/computer.software.latest_release_date>	2008.33333333
 /m/085j0	<http://rdf.freebase.com/ns/computer.operating_system.release_date>	2001.83333333
-/m/085j0	<http://rdf.freebase.com/ns/computer.software.first_released>	2001.66666667
 /m/02xwq9	<http://rdf.freebase.com/ns/people.person.height_meters>	1.78
 /m/02xwq9	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1927.91666667
 /m/05k4my	<http://rdf.freebase.com/ns/film.film.initial_release_date>	2006.58333333
@@ -9357,7 +9349,6 @@
 /m/0l38g	<http://rdf.freebase.com/ns/location.dated_location.date_founded>	1850.0
 /m/0l38g	<http://rdf.freebase.com/ns/topic_server.population_number>	46877.0
 /m/0l38g	<http://rdf.freebase.com/ns/location.location.area>	5889.6329629
-/m/0154yf	<http://rdf.freebase.com/ns/royalty.order_of_chivalry.date_founded>	1802.41666667
 /m/016ndm	<http://rdf.freebase.com/ns/location.geocode.longitude>	-81.271894
 /m/016ndm	<http://rdf.freebase.com/ns/location.geocode.latitude>	43.008289
 /m/016ndm	<http://rdf.freebase.com/ns/organization.organization.date_founded>	1878.0
@@ -11577,7 +11568,6 @@
 /m/02z2lj	<http://rdf.freebase.com/ns/location.geocode.latitude>	53.6136
 /m/027n4zv	<http://rdf.freebase.com/ns/people.person.height_meters>	1.85
 /m/027n4zv	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1978.16666667
-/m/05z43v	<http://rdf.freebase.com/ns/tv.tv_series_episode.season_number>	2002.0
 /m/05z43v	<http://rdf.freebase.com/ns/tv.tv_series_episode.episode_number>	2.0
 /m/05z43v	<http://rdf.freebase.com/ns/tv.tv_series_episode.air_date>	2002.58333333
 /m/05z43v	<http://rdf.freebase.com/ns/tv.tv_program.episode_running_time>	96.0
@@ -12880,7 +12870,6 @@
 /m/0jfx1	<http://rdf.freebase.com/ns/people.person.weight_kg>	71.0
 /m/02wxtgw	<http://rdf.freebase.com/ns/computer.software.latest_release_date>	2014.91666667
 /m/02wxtgw	<http://rdf.freebase.com/ns/computer.operating_system.release_date>	2008.75
-/m/02wxtgw	<http://rdf.freebase.com/ns/computer.software.first_released>	2008.75
 /m/0hqzr	<http://rdf.freebase.com/ns/location.geocode.longitude>	-1.5528
 /m/0hqzr	<http://rdf.freebase.com/ns/location.geocode.latitude>	47.2181
 /m/0hqzr	<http://rdf.freebase.com/ns/topic_server.population_number>	270343.0
@@ -14281,8 +14270,6 @@
 /m/02bb26	<http://rdf.freebase.com/ns/location.geocode.latitude>	10.460556
 /m/02bb26	<http://rdf.freebase.com/ns/location.dated_location.date_founded>	1797.0
 /m/02bb26	<http://rdf.freebase.com/ns/location.dated_location.date_dissolved>	1889.0
-/m/01d5g	<http://rdf.freebase.com/ns/fictional_universe.fictional_character.height>	2.1
-/m/01d5g	<http://rdf.freebase.com/ns/fictional_universe.fictional_character.weight>	95.0
 /m/075cph	<http://rdf.freebase.com/ns/film.film.initial_release_date>	1956.33333333
 /m/0464pz	<http://rdf.freebase.com/ns/tv.tv_program.air_date_of_final_episode>	2008.25
 /m/0464pz	<http://rdf.freebase.com/ns/tv.tv_program.episode_running_time>	60.0
@@ -14826,7 +14813,6 @@
 /m/06xbsn	<http://rdf.freebase.com/ns/sports.sports_team.founded>	1957.0
 /m/017khj	<http://rdf.freebase.com/ns/people.person.height_meters>	1.88
 /m/017khj	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1941.58333333
-/m/04f6df0	<http://rdf.freebase.com/ns/tv.tv_series_episode.season_number>	2009.0
 /m/04f6df0	<http://rdf.freebase.com/ns/tv.tv_series_episode.episode_number>	7.0
 /m/04f6df0	<http://rdf.freebase.com/ns/tv.tv_series_episode.air_date>	2009.91666667
 /m/04f6df0	<http://rdf.freebase.com/ns/tv.tv_program.episode_running_time>	100.0
@@ -16612,9 +16598,6 @@
 /m/0207wx	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1905.66666667
 /m/0207wx	<http://rdf.freebase.com/ns/people.deceased_person.date_of_death>	1980.58333333
 /m/049rl0	<http://rdf.freebase.com/ns/organization.organization.date_founded>	1922.91666667
-/m/03d17dg	<http://rdf.freebase.com/ns/tv.tv_series_season.from>	2013.41666667
-/m/03d17dg	<http://rdf.freebase.com/ns/tv.tv_series_season.number_of_episodes>	15.0
-/m/03d17dg	<http://rdf.freebase.com/ns/tv.tv_series_season.season_number>	4.0
 /m/0jxgx	<http://rdf.freebase.com/ns/location.geocode.longitude>	-82.74
 /m/0jxgx	<http://rdf.freebase.com/ns/location.geocode.latitude>	27.9
 /m/0jxgx	<http://rdf.freebase.com/ns/location.dated_location.date_founded>	1911.41666667
@@ -17659,7 +17642,6 @@
 /m/01lwx	<http://rdf.freebase.com/ns/people.deceased_person.date_of_burial>	1882.33333333
 /m/01lwx	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1809.16666667
 /m/01lwx	<http://rdf.freebase.com/ns/people.deceased_person.date_of_death>	1882.33333333
-/m/05z1_	<http://rdf.freebase.com/ns/computer.programming_language.introduced>	1991.0
 /m/01x72k	<http://rdf.freebase.com/ns/people.person.height_meters>	1.651
 /m/01x72k	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1972.58333333
 /m/045346	<http://rdf.freebase.com/ns/sports.sports_team.founded>	1957.0
@@ -18839,7 +18821,6 @@
 /m/018mrd	<http://rdf.freebase.com/ns/base.usnris.nris_listing.item_number>	99000550.0
 /m/018mrd	<http://rdf.freebase.com/ns/location.dated_location.date_founded>	1899.0
 /m/018mrd	<http://rdf.freebase.com/ns/location.location.area>	0.250905098189
-/m/05n5kv	<http://rdf.freebase.com/ns/royalty.order_of_chivalry.date_founded>	1694.0
 /m/02f71y	<http://rdf.freebase.com/ns/award.award_category.date_established>	1984.0
 /m/0cpvcd	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1881.75
 /m/0cpvcd	<http://rdf.freebase.com/ns/people.deceased_person.date_of_death>	1973.83333333
@@ -19000,7 +18981,6 @@
 /m/03f0324	<http://rdf.freebase.com/ns/people.deceased_person.date_of_burial>	1924.5
 /m/03f0324	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1883.58333333
 /m/03f0324	<http://rdf.freebase.com/ns/people.deceased_person.date_of_death>	1924.5
-/m/022kcs	<http://rdf.freebase.com/ns/royalty.order_of_chivalry.date_founded>	1896.33333333
 /m/0kdqw	<http://rdf.freebase.com/ns/location.geocode.longitude>	-75.316944
 /m/0kdqw	<http://rdf.freebase.com/ns/location.geocode.latitude>	40.021111
 /m/0kdqw	<http://rdf.freebase.com/ns/topic_server.population_number>	3779.0
@@ -21460,7 +21440,6 @@
 /m/01nkcn	<http://rdf.freebase.com/ns/location.geocode.latitude>	41.740697
 /m/01nkcn	<http://rdf.freebase.com/ns/organization.organization.date_founded>	1888.0
 /m/07scx	<http://rdf.freebase.com/ns/computer.software.latest_release_date>	1989.83333333
-/m/07scx	<http://rdf.freebase.com/ns/computer.software.first_released>	1971.91666667
 /m/024mpp	<http://rdf.freebase.com/ns/film.film.initial_release_date>	2003.5
 /m/034q81	<http://rdf.freebase.com/ns/location.geocode.longitude>	76.768209
 /m/034q81	<http://rdf.freebase.com/ns/location.geocode.latitude>	30.757995
@@ -21882,7 +21861,6 @@
 /m/0225bv	<http://rdf.freebase.com/ns/location.geocode.longitude>	-85.760222
 /m/0225bv	<http://rdf.freebase.com/ns/location.geocode.latitude>	38.215019
 /m/0225bv	<http://rdf.freebase.com/ns/organization.organization.date_founded>	1798.0
-/m/05f67hw	<http://rdf.freebase.com/ns/tv.tv_series_episode.season_number>	1.0
 /m/05f67hw	<http://rdf.freebase.com/ns/tv.tv_series_episode.episode_number>	7.0
 /m/05f67hw	<http://rdf.freebase.com/ns/tv.tv_series_episode.air_date>	2010.0
 /m/05f67hw	<http://rdf.freebase.com/ns/film.film.initial_release_date>	2010.0
@@ -22062,7 +22040,6 @@
 /m/02xyl	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1920.83333333
 /m/02xyl	<http://rdf.freebase.com/ns/people.deceased_person.date_of_death>	1986.16666667
 /m/05vjt6	<http://rdf.freebase.com/ns/sports.sports_team.founded>	1912.0
-/m/0671wk	<http://rdf.freebase.com/ns/royalty.order_of_chivalry.date_founded>	1847.66666667
 /m/02kk_c	<http://rdf.freebase.com/ns/tv.tv_program.air_date_of_final_episode>	1998.41666667
 /m/02kk_c	<http://rdf.freebase.com/ns/tv.tv_program.episode_running_time>	60.0
 /m/02kk_c	<http://rdf.freebase.com/ns/tv.tv_program.number_of_seasons>	1.0
@@ -22102,7 +22079,6 @@
 /m/0n1v8	<http://rdf.freebase.com/ns/topic_server.population_number>	368065.0
 /m/0n1v8	<http://rdf.freebase.com/ns/location.location.area>	1504.78309211
 /m/01bgqh	<http://rdf.freebase.com/ns/award.award_category.date_established>	1958.0
-/m/0bx_hnp	<http://rdf.freebase.com/ns/tv.tv_series_episode.season_number>	2011.0
 /m/0bx_hnp	<http://rdf.freebase.com/ns/tv.tv_series_episode.episode_number>	18.0
 /m/0bx_hnp	<http://rdf.freebase.com/ns/tv.tv_series_episode.air_date>	2011.83333333
 /m/0bx_hnp	<http://rdf.freebase.com/ns/film.film.initial_release_date>	2011.75
@@ -22489,7 +22465,6 @@
 /m/016kft	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1940.91666667
 /m/0161h5	<http://rdf.freebase.com/ns/people.person.height_meters>	1.73
 /m/0161h5	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1925.83333333
-/m/060kv	<http://rdf.freebase.com/ns/computer.programming_language.introduced>	1995.0
 /m/06t8v	<http://rdf.freebase.com/ns/location.geocode.longitude>	14.5
 /m/06t8v	<http://rdf.freebase.com/ns/location.geocode.latitude>	46.05
 /m/06t8v	<http://rdf.freebase.com/ns/location.country.calling_code>	386.0
@@ -27406,8 +27381,6 @@
 /m/0jmxb	<http://rdf.freebase.com/ns/location.geocode.latitude>	54.62704075
 /m/0jmxb	<http://rdf.freebase.com/ns/location.uk_statistical_location.ons_code>	16.0
 /m/0jmxb	<http://rdf.freebase.com/ns/location.location.area>	6768.0
-/m/06ys2	<http://rdf.freebase.com/ns/fictional_universe.fictional_character.height>	1.77
-/m/06ys2	<http://rdf.freebase.com/ns/fictional_universe.fictional_character.weight>	76.0
 /m/02056s	<http://rdf.freebase.com/ns/sports.sports_team.founded>	1874.0
 /m/02k4gv	<http://rdf.freebase.com/ns/people.person.height_meters>	1.88
 /m/02k4gv	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1966.58333333
@@ -28690,7 +28663,6 @@
 /m/03crmd	<http://rdf.freebase.com/ns/people.person.height_meters>	1.75
 /m/03crmd	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1960.16666667
 /m/05dl1s	<http://rdf.freebase.com/ns/film.film.initial_release_date>	1991.75
-/m/073_6	<http://rdf.freebase.com/ns/visual_art.art_period_movement.began_approximately>	1920.0
 /m/031y07	<http://rdf.freebase.com/ns/people.person.height_meters>	1.85
 /m/031y07	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1913.75
 /m/031y07	<http://rdf.freebase.com/ns/people.deceased_person.date_of_death>	1989.83333333
@@ -29154,7 +29126,6 @@
 /m/0n2sh	<http://rdf.freebase.com/ns/location.location.area>	1217.29441186
 /m/02m92h	<http://rdf.freebase.com/ns/people.person.height_meters>	1.82
 /m/02m92h	<http://rdf.freebase.com/ns/people.person.date_of_birth>	1962.83333333
-/m/05zrn	<http://rdf.freebase.com/ns/computer.programming_language.introduced>	1987.0
 /m/049lr	<http://rdf.freebase.com/ns/location.geocode.longitude>	77.56029
 /m/049lr	<http://rdf.freebase.com/ns/location.geocode.latitude>	12.970214
 /m/049lr	<http://rdf.freebase.com/ns/location.dated_location.date_founded>	1956.91666667

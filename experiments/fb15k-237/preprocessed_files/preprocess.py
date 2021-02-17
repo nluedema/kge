@@ -46,14 +46,31 @@ with open(numeric_path, "r") as f:
     )
 
 # Remove entities that are not in fb15k-237
+# Count the occurences of each relation
+numeric_data_removed = []
+rel_counts = {}
+for t in numeric_data:
+    ent = t[0]
+    rel = t[1]
+
+    if ent not in entities:
+        continue
+    numeric_data_removed.append(t)
+
+    if rel not in rel_counts:
+        rel_counts[rel] = 1
+    else:
+        rel_counts[rel] += 1
+
+# Remove triples with relations that have less than 5 occurences
 numeric_path_preprocessed = f"{data_path}preprocessed_files/numeric_data.txt"
 with open(numeric_path_preprocessed, "w") as f:
-    for t in numeric_data:
+    for t in numeric_data_removed:
         ent = t[0]
         rel = t[1]
         val = t[2]
 
-        if ent not in entities:
+        if rel_counts[rel] < 5:
             continue
         f.write(f"{ent}\t{rel}\t{val}\n")
 
