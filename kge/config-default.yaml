@@ -135,6 +135,10 @@ model: ''
 
 # Options of training jobs (job.type=="train")
 train:
+  # Additional arguments for the multimodal trainings mode
+  multimodal_args:
+    +++: ++
+  
   # Split used for training (specified under 'dataset.files').
   split: train
 
