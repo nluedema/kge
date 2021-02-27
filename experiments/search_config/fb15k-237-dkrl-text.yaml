@@ -139,7 +139,6 @@ ax_search:
       type: choice
       values: ['tanh', 'relu']  
 
-
     # cnn initialization
     - name: text_cnn_embedder.initialize
       type: fixed
@@ -187,6 +186,6 @@ ax_search:
       value: -1
 
     # model-specific entries
-    - name: dkrl_model.modality_weight
+    - name: train.multimodal_args.text.weight
       type: range
       bounds: [0.0, 1.0]
