@@ -164,3 +164,12 @@ sum(lengths > 250)
 # 17
 sum(lengths > 200)
 # 142
+
+np.percentile(lengths, [25,50,75])
+# array([ 43.,  81., 123.])
+np.percentile(lengths, [10,20,30,40,50,60,70,80,90])
+# array([ 23.,  36.,  49.,  64.,  81., 100., 117., 131., 150.])
+np.percentile(lengths[lengths <= 250], [25,50,75])
+# array([ 42.,  81., 123.])
+np.percentile(lengths[lengths <= 250], [10,20,30,40,50,60,70,80,90])
+# array([ 23.,  36.,  49.,  64.,  81., 100., 116., 131., 149.])

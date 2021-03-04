@@ -164,3 +164,8 @@ sum(lengths > 100)
 # 35
 sum(lengths > 80)
 # 2667
+
+np.percentile(lengths, [25,50,75])
+# array([15., 30., 48.])
+np.percentile(lengths, [10,20,30,40,50,60,70,80,90])
+# array([ 0., 13., 17., 23., 30., 37., 44., 52., 62.])
