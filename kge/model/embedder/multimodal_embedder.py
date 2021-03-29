@@ -114,6 +114,11 @@ class MultimodalEmbedder(KgeEmbedder):
         for modality in self.config.get("train.multimodal_args.modalities"):
             self.embedder[modality].prepare_job(job, **kwargs)
 
+    @torch.no_grad()
+    def init_pretrained(self, pretrained_embedder: KgeEmbedder) -> None:
+        # only implemented for struct embeddings so far
+        self.embedder["struct"].init_pretrained(pretrained_embedder)
+
     def embed(self, indexes: Tensor, **kwargs) -> Tensor:
         if "modality" in kwargs:
             modality = kwargs["modality"]
