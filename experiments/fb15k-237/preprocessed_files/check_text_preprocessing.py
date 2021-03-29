@@ -72,9 +72,10 @@ for entity in entities:
             text=data_index[entity], model=model, punctuation_flag=True,
             stopwords_flag=True, lower_flag=True, with_oov=False
         )
-    else:
-        text = []
-    text_data.append(text)
+        text_data.append(text)
+    #else:
+    #    text = []
+    #    text_data.append(text)
 
 text_data_with_oov = []
 for entity in entities:
@@ -83,9 +84,10 @@ for entity in entities:
             text=data_index[entity], model=model, punctuation_flag=True,
             stopwords_flag=True, lower_flag=True, with_oov=True
         )
-    else:
-        text = []
-    text_data_with_oov.append(text)
+        text_data_with_oov.append(text)
+    #else:
+    #    text = []
+    #    text_data_with_oov.append(text)
 
 words,lengths = get_words_lengths(text_data)
 words_with_oov,lengths_with_oov = get_words_lengths(text_data_with_oov)
@@ -156,7 +158,7 @@ lengths_with_oov.max()
 # 417
 
 len(lengths)
-# 14541
+# 14515
 
 sum(lengths > 300)
 # 6
@@ -168,8 +170,18 @@ sum(lengths > 200)
 np.percentile(lengths, [25,50,75])
 # array([ 43.,  81., 123.])
 np.percentile(lengths, [10,20,30,40,50,60,70,80,90])
-# array([ 23.,  36.,  49.,  64.,  81., 100., 117., 131., 150.])
+# array([ 23.,  36.,  50.,  64.,  81., 100., 117., 131., 150.])
 np.percentile(lengths[lengths <= 250], [25,50,75])
 # array([ 42.,  81., 123.])
 np.percentile(lengths[lengths <= 250], [10,20,30,40,50,60,70,80,90])
-# array([ 23.,  36.,  49.,  64.,  81., 100., 116., 131., 149.])
+# array([ 23.,  36.,  49.,  64.,  81., 100., 117., 131., 149.])
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 14})
+plt.rcParams.update({'axes.linewidth': 0.9})
+fig = sns.displot(
+    lengths, bins=10 
+)
+fig.set(xlabel="# of tokens", title="FB15K-237")
+fig.savefig('/work-ceph/nluedema/kge/experiments/plots/fb15k_237_desc_length_dist.png')
