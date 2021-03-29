@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 data_path = "/work-ceph/nluedema/kge/experiments/yago3-10/"
 numeric = pd.read_csv(
     f"{data_path}original_files/numerical_data_merged.txt",
@@ -16,3 +17,10 @@ text = pd.read_csv(
 )
 text.duplicated().sum()
 # => 7 duplicates
+
+entities_path = "/work-ceph/nluedema/kge/data/yago3-10/entity_ids.del"
+entities = pd.read_csv(entities_path, header=None, names=["id","ent"], sep="\t")
+text[np.in1d(text["ent"], entities["ent"])].duplicated().sum()
+len(text)
+len(text[np.in1d(text["ent"], entities["ent"])])
+

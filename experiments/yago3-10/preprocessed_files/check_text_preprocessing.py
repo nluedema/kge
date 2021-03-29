@@ -72,9 +72,10 @@ for entity in entities:
             text=data_index[entity], model=model, punctuation_flag=True,
             stopwords_flag=True, lower_flag=True, with_oov=False
         )
-    else:
-        text = []
-    text_data.append(text)
+        text_data.append(text)
+    #else:
+    #    #text = []
+    #    text_data.append(text)
 
 text_data_with_oov = []
 for entity in entities:
@@ -83,9 +84,10 @@ for entity in entities:
             text=data_index[entity], model=model, punctuation_flag=True,
             stopwords_flag=True, lower_flag=True, with_oov=True
         )
-    else:
-        text = []
-    text_data_with_oov.append(text)
+        text_data_with_oov.append(text)
+    #else:
+    #    text = []
+    #    text_data_with_oov.append(text)
 
 words,lengths = get_words_lengths(text_data)
 words_with_oov,lengths_with_oov = get_words_lengths(text_data_with_oov)
@@ -158,7 +160,7 @@ lengths_with_oov.max()
 # 126
 
 len(lengths)
-# 123182
+# 107319
 
 sum(lengths > 100)
 # 35
@@ -166,6 +168,16 @@ sum(lengths > 80)
 # 2667
 
 np.percentile(lengths, [25,50,75])
-# array([15., 30., 48.])
+# array([20., 34., 51.])
 np.percentile(lengths, [10,20,30,40,50,60,70,80,90])
-# array([ 0., 13., 17., 23., 30., 37., 44., 52., 62.])
+# array([13., 17., 22., 28., 34., 41., 47., 55., 64.])
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 14})
+plt.rcParams.update({'axes.linewidth': 0.9})
+fig = sns.displot(
+    lengths, bins=10
+)
+fig.set(xlabel="# of tokens", title="YAGO3-10")
+fig.savefig('/work-ceph/nluedema/kge/experiments/plots/yago3_10_desc_length_dist.png')
