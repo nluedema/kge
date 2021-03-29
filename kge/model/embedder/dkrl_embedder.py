@@ -90,6 +90,11 @@ class DKRLEmbedder(KgeEmbedder):
         for modality in self.get_option("modalities"):
             self.embedder[modality].prepare_job(job, **kwargs)
     
+    @torch.no_grad()
+    def init_pretrained(self, pretrained_embedder: KgeEmbedder) -> None:
+        # only implemented for struct embeddings so far
+        self.embedder["struct"].init_pretrained(pretrained_embedder)
+
     def _embed(self, indexes: Tensor) -> Tensor:
         embeddings_list = []
         for modality in self.get_option("modalities"):
