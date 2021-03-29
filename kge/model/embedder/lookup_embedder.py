@@ -85,6 +85,19 @@ class LookupEmbedder(KgeEmbedder):
         ] = pretrained_embedder.embed(torch.from_numpy(pretrained_intersect_ind)).to(
             self._embeddings.weight.device
         )
+        if (
+            "relation_embedder" in self.configuration_key and 
+            "reciprocal_relations_model" in self.configuration_key
+        ):
+            nbr_rel_this = int(self._embeddings.weight.shape[0]/2)
+            nbr_rel_pretrained = int(pretrained_embedder._embeddings.weight.shape[0]/2)
+            self._embeddings.weight[
+                torch.from_numpy(self_intersect_ind+nbr_rel_this)
+                .to(self._embeddings.weight.device)
+                .long()
+            ] = pretrained_embedder.embed(torch.from_numpy(pretrained_intersect_ind+nbr_rel_pretrained)).to(
+                self._embeddings.weight.device
+            )
 
     def embed(self, indexes: Tensor) -> Tensor:
         return self._postprocess(self._embeddings(indexes.long()))
