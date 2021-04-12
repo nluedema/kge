@@ -25,7 +25,7 @@ def mean_std_table(
         # write table headers
         output_file.write("\\begin{table}[h!]\n")
         output_file.write("  \\centering\n")
-        output_file.write("    \\begin{tabular}{\n")
+        output_file.write("  \\begin{tabular}{\n")
         output_file.write("      l\n")
         output_file.write("      l\n")
         for dataset in datasets:
@@ -34,7 +34,7 @@ def mean_std_table(
                     output_file.write("      c\n")
                 else:
                     output_file.write("      c@{\hspace{0.5cm}}\n")
-        output_file.write("    }\n")
+        output_file.write("  }\n")
         output_file.write("    \\toprule\n")
         output_file.write("    & & ")
         for dataset in dataset_labels:
@@ -60,7 +60,8 @@ def mean_std_table(
 
         # populate table
         model = model_order[0]
-        output_file.write(f"    \\multirow{{2}}*{{{model_labels[model]}}} \n")
+        #output_file.write(f"    \\multirow{{2}}*{{{model_labels[model]}}} \n")
+        output_file.write(f"    {model_labels[model]} \n")
         output_file.write("    & & ")
         for dataset in datasets:
             for metric in range(len(metrics)):
@@ -80,12 +81,17 @@ def mean_std_table(
                     (max_df["model"] == model) &
                     (max_df["dataset"] == dataset)
                 ]
+                #output_file.write(
+                #            "\makecell{{ {:.1f}$\\pm${:.1f} \\\\ ({:.1f},{:.1f})}}".format(
+                #            round(entry_mean[metrics[metric]].item()*100, 1),
+                #            round(entry_std[metrics[metric]].item()*100, 1),
+                #            round(entry_min[metrics[metric]].item()*100, 1),
+                #            round(entry_max[metrics[metric]].item()*100, 1))
+                #            )
                 output_file.write(
-                            "\makecell{{ {:.1f}$\\pm${:.1f} \\\\ ({:.1f},{:.1f})}}".format(
+                            "{:.1f}$\\pm${:.1f}".format(
                             round(entry_mean[metrics[metric]].item()*100, 1),
-                            round(entry_std[metrics[metric]].item()*100, 1),
-                            round(entry_min[metrics[metric]].item()*100, 1),
-                            round(entry_max[metrics[metric]].item()*100, 1))
+                            round(entry_std[metrics[metric]].item()*100, 1))
                             )
                 if not(dataset == datasets[-1] and metrics[metric] == metrics[-1]):
                     output_file.write(" & ")
@@ -95,7 +101,8 @@ def mean_std_table(
 
 
         for model in model_order[1:]:
-            output_file.write(f"    \\multirow{{5}}*{{{model_labels[model]}}} \n")
+            #output_file.write(f"    \\multirow{{5}}*{{{model_labels[model]}}} \n")
+            output_file.write(f"    \\multirow{{3}}*{{{model_labels[model]}}} \n")
             for modality in modalities_order:
                 output_file.write("    & " + modality + " & ")
                 for dataset in datasets:
@@ -120,12 +127,17 @@ def mean_std_table(
                             (max_df["dataset"] == dataset) &
                             (max_df["modalities"] == modality)
                         ]
+                        #output_file.write(
+                        #    "\makecell{{ {:.1f}$\\pm${:.1f} \\\\ ({:.1f},{:.1f})}}".format(
+                        #    round(entry_mean[metrics[metric]].item()*100, 1),
+                        #    round(entry_std[metrics[metric]].item()*100, 1),
+                        #    round(entry_min[metrics[metric]].item()*100, 1),
+                        #    round(entry_max[metrics[metric]].item()*100, 1))
+                        #    )
                         output_file.write(
-                            "\makecell{{ {:.1f}$\\pm${:.1f} \\\\ ({:.1f},{:.1f})}}".format(
+                            "{:.1f}$\\pm${:.1f}".format(
                             round(entry_mean[metrics[metric]].item()*100, 1),
-                            round(entry_std[metrics[metric]].item()*100, 1),
-                            round(entry_min[metrics[metric]].item()*100, 1),
-                            round(entry_max[metrics[metric]].item()*100, 1))
+                            round(entry_std[metrics[metric]].item()*100, 1))
                             )
                         if not(dataset == datasets[-1] and metrics[metric] == metrics[-1]):
                             output_file.write(" & ")
@@ -139,7 +151,7 @@ def mean_std_table(
 
         # write end of table
         output_file.write("  \\end{tabular}\n")
-        output_file.write("  \\caption{Mean and standard deviation of the performance on validation data of the best performing models.}\n")
+        output_file.write("  \\caption{Mean and standard deviation of the performance on validation data for the best selected models trained from scratch five times.}\n")
         output_file.write("\\end{table}\n\n")
 
 
@@ -522,8 +534,8 @@ if __name__ == '__main__':
     modalities_order = ['text','num','text-num']
 
     # set datasets
-    datasets = ["yago3-10", "fb15k-237"]
-    dataset_labels = ["YAGO3-10","FB15K-237"]
+    datasets = ["fb15k-237", "yago3-10"]
+    dataset_labels = ["FB15K-237", "YAGO3-10"]
 
     # set 2 metrics and corresponding attributes in CSVs
     metrics = ["fwt_mrr", "fwt_hits@10"]
