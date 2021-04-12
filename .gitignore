@@ -5,6 +5,7 @@ local/*
 /data/*
 !data/*.sh
 !data/preprocess/
+experiments/pretrained/*
 /trace.csv
 #*.csv
 *.png
