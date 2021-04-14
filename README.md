@@ -30,14 +30,20 @@ cd ..
 
 Example: DKRL on FB15K-237 using text and numeric information
 ```sh
-kge start .../kge/experiments/search_config/fb15k-237/fb15k-237-literale-text-numeric.yaml --search.device_pool cuda:0 --search.num_workers 1
+kge start [path-to-repo]/experiments/search_config/fb15k-237/fb15k-237-literale-text-numeric.yaml --search.device_pool cuda:0 --search.num_workers 1
 ```
 * Use [create_best_models_search_files.py](https://github.com/nluedema/kge/blob/master/experiments/scripts/create_best_models_search_files.py) to create configs that train the best models 5 times
 
 Example: Create best model search folders for all FB15K-237 searches
 ```sh
-cd .../kge/local/experiments
+cd [path-to-repo]/local/experiments
 python ../../experiments/scripts/create_best_models_search_files.py --prefix *-fb15k-237-*
+```
+* Navigate to the best model search folders and use ```kge resume``` to train best models 5 times
+
+Example: Train a best model configuration 5 times
+```sh
+kge resume . --search.device_pool cuda:0 --search.num_workers 1
 ```
 
 ### MKBE
@@ -46,7 +52,7 @@ python ../../experiments/scripts/create_best_models_search_files.py --prefix *-f
   * The multimodal data in the MKBE branch is stored [here](https://github.com/nluedema/kge/tree/MKBE/experiments/fb15k-237/preprocessed_files) and [here](https://github.com/nluedema/kge/tree/MKBE/experiments/yago3-10/preprocessed_files)
 * Create the modified datasets for MKBE as shown below
 ```sh
-cd .../kge/data
+cd [path-to-repo]/data
 rm -r fb15k-237
 rm -r yago3-10
 sh download_mkge.sh
@@ -65,9 +71,9 @@ python preprocess/preprocess_yago3-10-mkbe.py --modality all yago3-10-text-numer
 ```
 * Run the searches for MKBE
 
-Example: MKGE on YAGO3-10 using text and numeric information
+Example: MKBE on YAGO3-10 using text and numeric information
 ```sh
-kge start .../kge/experiments/search_config/yago3-10/yago3-10-mkbe-text-numeric.yaml --search.device_pool cuda:0 --search.num_workers 1
+kge start [path-to-repo]/experiments/search_config/yago3-10/yago3-10-mkbe-text-numeric.yaml --search.device_pool cuda:0 --search.num_workers 1
 ```
 
 * To train the best models 5 times switch back to master
@@ -79,7 +85,7 @@ kge start .../kge/experiments/search_config/yago3-10/yago3-10-mkbe-text-numeric.
 * Switch to the master branch `git checkout master`
 * Get the pretrained models as shown below
 ```sh
-cd .../kge/experiments
+cd [path-to-repo]/experiments
 mkdir pretrained
 cd pretrained
 wget http://web.informatik.uni-mannheim.de/pi1/iclr2020-models/fb15k-237-complex.pt
