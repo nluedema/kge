@@ -2,7 +2,8 @@ This repository forks [LibKGE](https://github.com/uma-pi1/kge) and implements th
 [DKRL](https://ojs.aaai.org/index.php/AAAI/article/view/10329),
 [LiteralE](https://link.springer.com/chapter/10.1007/978-3-030-30793-6_20) and
 [MKBE](https://www.aclweb.org/anthology/D18-1359/) on top of it.
-DKRL and LiteralE are implemented in the master branch. MKBE is implemented in the [MKBE](https://github.com/nluedema/kge/tree/MKBE) branch.
+DKRL and LiteralE are implemented in the master branch. MKBE is implemented in the MKBE [branch](https://github.com/nluedema/kge/tree/MKBE).
+As a baseline, the KGE model [ComplEx](http://proceedings.mlr.press/v48/trouillon16.pdf) is used.
 
 Two experiments are performed. In the first experiment the mKGE models are trained from scratch. The corresponding config files for the first experiment can be found [here](https://github.com/nluedema/kge/tree/master/experiments/search_config). In the second experiment the mKGE models are trained starting from pretrained structural embeddings.
 The corresponding config files for the second experiment can be found [here](https://github.com/nluedema/kge/tree/master/experiments/search_config_pretrained).
